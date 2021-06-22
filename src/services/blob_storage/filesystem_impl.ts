@@ -49,11 +49,11 @@ export default class Filesystem implements BlobStorage {
         // Windows directories use backslashes instead of forward slashes in unix like systems
         if (this._isWindows) filepath = filepath.replace(new RegExp('/', 'g'), `\\`);
 
-        if (!fs.existsSync(`${this._directory}${filepath}`)) {
-            fs.mkdirSync(`${this._directory}${filepath}`, { recursive: true });
+        if (!fs.existsSync(`${this._directory}/${filepath}`)) {
+            fs.mkdirSync(`${this._directory}/${filepath}`, { recursive: true });
         }
 
-        const writeStream = fs.createWriteStream(`${this._directory}${filepath}${filename}`, { flags: 'w' });
+        const writeStream = fs.createWriteStream(`${this._directory}/${filepath}/${filename}`, { flags: 'w' });
 
         stream?.on('error', (err: Error) => {
             Logger.error(`error saving file to filesystem ${err}`);
@@ -73,7 +73,7 @@ export default class Filesystem implements BlobStorage {
         return Promise.resolve(
             Result.Success({
                 filename,
-                filepath: `${this._directory}${filepath}`,
+                filepath: `${this._directory}/${filepath}`,
                 size: dataLength / 1000,
                 md5hash,
                 adapter_name: this.name()
