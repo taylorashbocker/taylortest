@@ -75,6 +75,8 @@ export default class RSARoutes {
 
             // initialize default payload
             const payload = new RSARequest({
+                clientID: Config.rsa_client_id,
+                subjectName: req.body.subjectName,
                 secureID: req.body.secureID,
                 authnAttemptId: req.body.authnAttemptId,
                 inResponseTo: req.body.inResponseTo
