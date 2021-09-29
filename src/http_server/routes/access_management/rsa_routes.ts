@@ -23,16 +23,33 @@ export default class RSARoutes {
     Functions: initialize (with and without securID), verify, status, cancel
     */
 
+    /*
+    init is used to begin (and optionally complete) an RSA authentication.
+    Either a user's ID may be provided and the SecurID provided in a later verify() request,
+    or else the user may provide both the user ID and SecureID at once to init
+    to complete the authentication request
+    */
     private static init(req: Request, res: Response, next: NextFunction) {
         if (req.headers['content-type']?.includes('application/json')) {
+            // return error if no subjectName
+            if (!req.body.subjectName) {
+                res.status(400).json('Please provide a subjectName');
+                next();
+            }
+
+            // initialize default payload
+            const payload = new RSARequest({
+                clientID: Config.rsa_client_id,
+                subjectName: req.body.subjectName,
+                secureID: (req.body.secureID ? req.body.secureID : null)
+            })
+
             const axiosConfig: AxiosRequestConfig = {
                 headers: {
                     'Content-Type': 'application/json;charset=UTF-8',
                     'client-key': Config.rsa_client_key
                 }
             };
-
-            const payload = plainToClass(RSARequest, req.body as object);
 
             axios.post(`${Config.rsa_url}/mfa/v1_1/authn/initialize`, payload, axiosConfig)
                 .then((response: AxiosResponse) => {
@@ -49,6 +66,7 @@ export default class RSARoutes {
         }
     }
 
+    // verify provides RSA with the user's SecurID to complete authentication
     private static verify(req: Request, res: Response, next: NextFunction) {
         if (req.headers['content-type']?.includes('application/json')) {
             const axiosConfig: AxiosRequestConfig = {
@@ -76,6 +94,7 @@ export default class RSARoutes {
         return
     }
 
+    // status returns the status of an RSA authentication attempt
     private static status(req: Request, res: Response, next: NextFunction) {
         if (req.headers['content-type']?.includes('application/json')) {
             const axiosConfig: AxiosRequestConfig = {
@@ -103,6 +122,7 @@ export default class RSARoutes {
         return
     }
 
+    // cancel cancels an RSA authentication attempt
     private static cancel(req: Request, res: Response, next: NextFunction) {
         return
     }

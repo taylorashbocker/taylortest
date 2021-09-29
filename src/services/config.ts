@@ -83,6 +83,7 @@ export class Config {
 
     private readonly _rsa_url: string;
     private readonly _rsa_client_key: string;
+    private readonly _rsa_client_id: string;
 
     private constructor() {
         // Either assign a sane default of the env var is missing, or create your
@@ -170,6 +171,7 @@ export class Config {
 
         this._rsa_url = process.env.RSA_URL || '';
         this._rsa_client_key = process.env.RSA_CLIENT_KEY || '';
+        this._rsa_client_id = process.env.RSA_CLIENT_ID || 'DeepLynx';
     }
 
     get ssl_enabled(): boolean {
@@ -402,6 +404,10 @@ export class Config {
 
     get rsa_client_key(): string {
         return this._rsa_client_key
+    }
+
+    get rsa_client_id(): string {
+        return this._rsa_client_id
     }
 
     public static Instance(): Config {

@@ -1,6 +1,7 @@
 import {NakedDomainClass} from '../../common_classes/base_domain_class';
 import {IsArray, IsBoolean, IsObject, IsOptional, IsString, ValidateNested} from 'class-validator';
 import { Type } from 'class-transformer';
+import uuid from 'uuid';
 
 export class SubjectCredentials extends NakedDomainClass {
     @IsString()
@@ -53,7 +54,8 @@ export class RSARequest extends NakedDomainClass {
     context?: RSAContext;
 
     constructor(input: {
-        subjectName?: string;
+        clientID?: string;
+        subjectName: string;
         secureID?: string;
         authnAttemptId?: string;
         inResponseTo?: string
@@ -61,7 +63,8 @@ export class RSARequest extends NakedDomainClass {
         super();
 
         if (input) {
-            if (input.subjectName) this.subjectName = input.subjectName;
+            if (input.clientID) this.clientID = input.clientID;
+            this.subjectName = input.subjectName;
             if (input.secureID) {
                 this.subjectCredentials = [new SubjectCredentials()]
                 this.subjectCredentials[0].collectedInputs = [new CollectedInput()]
@@ -73,6 +76,10 @@ export class RSARequest extends NakedDomainClass {
                 this.context.inResponseTo = input.inResponseTo;
             }
         }
+
+        // generate context if necessary and then create a unique messageId
+        if (!this.context) this.context = new RSAContext()
+        this.context.messageId = uuid.v4()
     }
 }
 
