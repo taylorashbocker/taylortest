@@ -6,13 +6,24 @@ info:
 
     The Deep Lynx Core API delivers a few main features.
 
-    1. Core provides a set of methods and endpoints for manipulating data in an object oriented database. This allows us to store complex datatypes as records and then to compile them into actual, modifiable objects at run-time. Users can store taxonomies or ontologies in a readable format.
+    1. Provides a set of methods and endpoints for manipulating data in an object oriented database. This allows us to store complex datatypes as records and then to compile them into actual, modifiable objects at run-time. Users can store taxonomies or ontologies in a readable format.
 
-    2. Core provides methods for storing and retrieving data in a graph database. This data is structured and validated against the aformentioned object oriented database before storage.
+    2. Provides methods for storing and retrieving data in a graph database. This data is structured and validated against the aformentioned object oriented database before storage.
   contact: {}
   version: '1.0'
+  license:
+    name: MIT
+    url: 'https://github.com/idaholab/Deep-Lynx/blob/master/LICENSE'
 servers:
+  - url: '{url}:{port}'
+    variables:
+      url:
+        default: 'http://localhost'
+        description: Base URL for Deep Lynx
+      port:
+        default: '8090'
   - url: 'http://localhost:8090'
+    description: Localhost
 tags:
   - name: Containers
     description: 'Containers are considered a root object with only users and organizations as potential parents. Containers separate object defintions (as declared in Metatypes) from each other and allow for versioning and access control. '
@@ -43,7 +54,7 @@ tags:
   - name: Events
     description: 'An application may create a Registered Event with Deep Lynx in order to  receive messages from Deep Lynx concerning the event type registered. This  system may be used to receive alerts when other Data Sources have ingested data, a new data source is created, etc.'
   - name: Authentication
-    description: 'These endpoints provide users and applications the ability to authenticate with Deep Lynx.'
+    description: These endpoints provide users and applications the ability to authenticate with Deep Lynx.
   - name: Misc
     description: ''
 security:
@@ -236,7 +247,7 @@ paths:
       tags:
         - Containers
       summary: Import Container
-      description: 'An optional query param "dryrun" may be included with a value of "true" in order to return a HTML formatted string explaining the name and description of the container along with the number of metatypes, metatype relationships, and metatype keys to be created. This request uses a form-data body. If the ontology to be imported is being referenced via url, provide the url via a "path" field. Otherwise a local file may be provided. A file takes precedence over a "path" value if both are provided.'
+      description: 'An optional query param `dryrun` may be included with a value of `true` in order to return a HTML formatted string explaining the name and description of the container along with the number of metatypes, metatype relationships, and metatype keys to be created. This request uses a form-data body. If the ontology to be imported is being referenced via url, provide the url via a `path` field. Otherwise a local file may be provided. A file takes precedence over a `path` value if both are provided.'
       operationId: ImportContainer
       requestBody:
         content:
@@ -421,7 +432,7 @@ paths:
       tags:
         - Graph
       summary: Create Or Update Nodes
-      description: This endpoint will either create new nodes or update nodes if a "modified_at" property with a valid DateTime is passed.
+      description: This endpoint will either create new nodes or update nodes if a `modified_at` property with a valid DateTime is passed.
       operationId: CreateOrUpdateNodes
       parameters:
         - name: container_id
@@ -677,7 +688,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Generic200'
-      description: This endpoint will either create new edges or update edges if a "modified_at" property with a valid DateTime is passed.
+      description: This endpoint will either create new edges or update edges if a `modified_at` property with a valid DateTime is passed.
       requestBody:
         content:
           application/json:
@@ -1736,7 +1747,7 @@ paths:
       tags:
         - Data Sources
       summary: Create Data Source
-      description: 'Create new datasource. Supported data source types are `http`, `standard` (or `manual`), and `jazz`'
+      description: 'Create new datasource. Supported data source types are `http`, `standard` (or `manual`), `jazz`, and `aveva`.'
       operationId: CreateDataSource
       parameters:
         - name: container_id
@@ -2206,7 +2217,7 @@ paths:
       tags:
         - Data Export
       summary: Stop Data Export
-      description: Stops a data export. Please note that this just sends a "stop" signal. The application's export adapter determines how to handle the said signal. In some cases the export stopping might not be immediate.
+      description: Stops a data export. Please note that this just sends a **stop** signal. The application's export adapter determines how to handle the said signal. In some cases the export stopping might not be immediate.
       operationId: StopDataExport
       parameters:
         - name: container_id
@@ -3007,7 +3018,7 @@ paths:
       tags:
         - Events
       summary: Create Registered Event
-      description: 'Create new registered event. An app_name, app_url, and type must be provided. Either a container_id or data_source_id must also be provided.'
+      description: 'Create new registered event. An `app_name`, `app_url`, and `event_type` must be provided. Either a `container_id` or `data_source_id` must also be provided.'
       operationId: CreateRegisteredEvent
       requestBody:
         content:
@@ -3059,7 +3070,7 @@ paths:
       tags:
         - Events
       summary: Update Registered Event
-      description: 'Update a registered event. If the "active" query paramter is provided with a value of true or false, the event will be activated/deactivated.'
+      description: 'Update a registered event. If the `active` query paramter is provided with a value of true or false, the event will be activated/deactivated.'
       operationId: UpdateRegisteredEvent
       parameters:
         - name: active
@@ -4788,14 +4799,13 @@ components:
             type: object
         defaultValue:
           type: string
-          minLength: 1
+          nullable: true
         metatype_relationship_id:
           type: string
           minLength: 1
         id:
           type: string
           minLength: 1
-        default_value: {}
         archived:
           type: boolean
         created_at:
@@ -4819,7 +4829,6 @@ components:
         - cardinality
         - validation
         - unique
-        - defaultValue
         - metatype_relationship_id
         - id
         - archived

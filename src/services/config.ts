@@ -81,6 +81,9 @@ export class Config {
     private readonly _smtp_refresh_token: string;
     private readonly _smtp_access_token: string;
 
+    private readonly _rsa_url: string;
+    private readonly _rsa_client_key: string;
+
     private constructor() {
         // Either assign a sane default of the env var is missing, or create your
         // own checks on process.env. There is most likely a more elegant way but
@@ -164,6 +167,9 @@ export class Config {
         this._smtp_client_secret = process.env.SMTP_CLIENT_SECRET || '';
         this._smtp_refresh_token = process.env.SMTP_REFRESH_TOKEN || '';
         this._smtp_access_token = process.env.SMTP_ACCESS_TOKEN || '';
+
+        this._rsa_url = process.env.RSA_URL || '';
+        this._rsa_client_key = process.env.RSA_CLIENT_KEY || '';
     }
 
     get ssl_enabled(): boolean {
@@ -388,6 +394,14 @@ export class Config {
 
     get auth_config_file(): string {
         return this._auth_config_file;
+    }
+
+    get rsa_url(): string {
+        return this._rsa_url;
+    }
+
+    get rsa_client_key(): string {
+        return this._rsa_client_key
     }
 
     public static Instance(): Config {
