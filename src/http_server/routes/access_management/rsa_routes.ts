@@ -18,12 +18,6 @@ export default class RSARoutes {
     }
 
     /*
-    Config: rsa_url (includes port?)
-    New Routes file: rsa_routes
-    Functions: initialize (with and without securID), verify, status, cancel
-    */
-
-    /*
     init is used to begin (and optionally complete) an RSA authentication.
     Either a user's ID may be provided and the SecurID provided in a later verify() request,
     or else the user may provide both the user ID and SecureID at once to init
@@ -45,6 +39,7 @@ export default class RSARoutes {
             })
 
             console.log(payload)
+            console.log(payload.subjectCredentials![0].collectedInputs)
 
             const axiosConfig: AxiosRequestConfig = {
                 headers: {
@@ -55,6 +50,7 @@ export default class RSARoutes {
 
             axios.post(`${Config.rsa_url}/mfa/v1_1/authn/initialize`, payload, axiosConfig)
                 .then((response: AxiosResponse) => {
+                    console.log(response)
                     const responsePayload = plainToClass(RSAResponse, response.data as object);
                     Result.Success(responsePayload).asResponse(res)
                 })
@@ -151,7 +147,8 @@ export default class RSARoutes {
 
             axios.post(`${Config.rsa_url}/mfa/v1_1/authn/cancel`, payload, axiosConfig)
                 .then((response: AxiosResponse) => {
-                    Result.Success(response.data).asResponse(res)
+                    const responsePayload = plainToClass(RSAResponse, response.data as object);
+                    Result.Success(responsePayload).asResponse(res)
                 })
                 .catch((e: string) => {
                     res.status(500).json(e);
