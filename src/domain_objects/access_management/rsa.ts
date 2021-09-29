@@ -5,7 +5,7 @@ import uuid from 'uuid';
 
 export class SubjectCredentials extends NakedDomainClass {
     @IsString()
-    methodId?: string = 'SECURID';
+    methodId?: string = 'SECURID' || 'SECURID_NEXT_TOKENCODE';
 
     @IsArray()
     @ValidateNested()
@@ -15,7 +15,7 @@ export class SubjectCredentials extends NakedDomainClass {
 
 export class CollectedInput extends NakedDomainClass {
     @IsString()
-    name = 'SECURID';
+    name? = 'SECURID' || 'SECURID_NEXT_TOKENCODE';
 
     @IsString()
     value?: string;
@@ -58,7 +58,8 @@ export class RSARequest extends NakedDomainClass {
         subjectName?: string;
         secureID?: string;
         authnAttemptId?: string;
-        inResponseTo?: string
+        inResponseTo?: string;
+        methodId?: string;
     }) {
         super();
 
@@ -67,7 +68,9 @@ export class RSARequest extends NakedDomainClass {
             if (input.subjectName) this.subjectName = input.subjectName;
             if (input.secureID) {
                 this.subjectCredentials = [new SubjectCredentials()]
+                this.subjectCredentials[0].methodId = input.methodId
                 this.subjectCredentials[0].collectedInputs = [new CollectedInput()]
+                this.subjectCredentials[0].collectedInputs[0].name = input.methodId
                 this.subjectCredentials[0].collectedInputs[0].value = input.secureID
             }
             if (input.authnAttemptId && input.inResponseTo) {
