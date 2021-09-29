@@ -195,3 +195,41 @@ export class Prompt extends NakedDomainClass {
     promptArgs?: string[];
 }
 
+// RSAStatusRequest defines the request body for the RSA status endpoint
+export class RSAStatusRequest extends NakedDomainClass {
+    @IsString()
+    authnAttemptId?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    removeAttemptId?: boolean;
+}
+
+// RSAStatusResponse defines the response body for the RSA status endpoint
+export class RSAStatusResponse extends NakedDomainClass {
+    @IsString()
+    attemptResponseCode?: string;
+
+    @IsString()
+    attemptReasonCode?: string;
+
+    @IsOptional()
+    @IsString()
+    subjectName?: string;
+
+    @IsOptional()
+    @IsString()
+    authnPolicyId?: string;
+
+    @IsOptional()
+    @IsArray()
+    sessionAttributes?: string[];
+
+    @IsOptional()
+    @IsArray()
+    successfulMethods?: string[];
+
+    @IsOptional()
+    @IsString()
+    attemptExpires?: string;
+}
