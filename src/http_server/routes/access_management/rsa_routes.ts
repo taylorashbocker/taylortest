@@ -44,6 +44,8 @@ export default class RSARoutes {
                 secureID: (req.body.secureID ? req.body.secureID : null)
             })
 
+            console.log(payload)
+
             const axiosConfig: AxiosRequestConfig = {
                 headers: {
                     'Content-Type': 'application/json;charset=UTF-8',
@@ -69,14 +71,25 @@ export default class RSARoutes {
     // verify provides RSA with the user's SecurID to complete authentication
     private static verify(req: Request, res: Response, next: NextFunction) {
         if (req.headers['content-type']?.includes('application/json')) {
+            // return error if no secureID
+            if (!req.body.secureID || !req.body.authnAttemptId || !req.body.inResponseTo) {
+                res.status(400).json('Please provide a secureID, authnAttemptId, and inResponseTo');
+                next();
+            }
+
+            // initialize default payload
+            const payload = new RSARequest({
+                secureID: req.body.secureID,
+                authnAttemptId: req.body.authnAttemptId,
+                inResponseTo: req.body.inResponseTo
+            })
+
             const axiosConfig: AxiosRequestConfig = {
                 headers: {
                     'Content-Type': 'application/json;charset=UTF-8',
                     'client-key': Config.rsa_client_key
                 }
             };
-
-            const payload = plainToClass(RSARequest, req.body as object);
 
             axios.post(`${Config.rsa_url}/mfa/v1_1/authn/verify`, payload, axiosConfig)
                 .then((response: AxiosResponse) => {
@@ -91,7 +104,6 @@ export default class RSARoutes {
             res.status(404).json('Unsupported content type');
             next();
         }
-        return
     }
 
     // status returns the status of an RSA authentication attempt
@@ -106,6 +118,8 @@ export default class RSARoutes {
 
             const payload = plainToClass(RSAStatusRequest, req.body as object);
 
+            console.log(payload)
+
             axios.post(`${Config.rsa_url}/mfa/v1_1/authn/status`, payload, axiosConfig)
                 .then((response: AxiosResponse) => {
                     const responsePayload = plainToClass(RSAStatusResponse, response.data as object);
@@ -119,11 +133,33 @@ export default class RSARoutes {
             res.status(404).json('Unsupported content type');
             next();
         }
-        return
     }
 
     // cancel cancels an RSA authentication attempt
     private static cancel(req: Request, res: Response, next: NextFunction) {
-        return
+        if (req.headers['content-type']?.includes('application/json')) {
+            const axiosConfig: AxiosRequestConfig = {
+                headers: {
+                    'Content-Type': 'application/json;charset=UTF-8',
+                    'client-key': Config.rsa_client_key
+                }
+            };
+
+            const payload = plainToClass(RSAStatusRequest, req.body as object);
+
+            console.log(payload)
+
+            axios.post(`${Config.rsa_url}/mfa/v1_1/authn/cancel`, payload, axiosConfig)
+                .then((response: AxiosResponse) => {
+                    Result.Success(response.data).asResponse(res)
+                })
+                .catch((e: string) => {
+                    res.status(500).json(e);
+                })
+                .finally(() => next());
+        } else {
+            res.status(404).json('Unsupported content type');
+            next();
+        }
     }
 }

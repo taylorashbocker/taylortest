@@ -55,7 +55,7 @@ export class RSARequest extends NakedDomainClass {
 
     constructor(input: {
         clientID?: string;
-        subjectName: string;
+        subjectName?: string;
         secureID?: string;
         authnAttemptId?: string;
         inResponseTo?: string
@@ -64,7 +64,7 @@ export class RSARequest extends NakedDomainClass {
 
         if (input) {
             if (input.clientID) this.clientID = input.clientID;
-            this.subjectName = input.subjectName;
+            if (input.subjectName) this.subjectName = input.subjectName;
             if (input.secureID) {
                 this.subjectCredentials = [new SubjectCredentials()]
                 this.subjectCredentials[0].collectedInputs = [new CollectedInput()]
@@ -202,7 +202,7 @@ export class Prompt extends NakedDomainClass {
     promptArgs?: string[];
 }
 
-// RSAStatusRequest defines the request body for the RSA status endpoint
+// RSAStatusRequest defines the request body for the RSA status and cancel endpoints
 export class RSAStatusRequest extends NakedDomainClass {
     @IsString()
     authnAttemptId?: string;
