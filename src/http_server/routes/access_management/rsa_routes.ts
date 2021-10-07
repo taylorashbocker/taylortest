@@ -40,7 +40,9 @@ export default class RSARoutes {
             })
 
             console.log(payload)
-            console.log(payload.subjectCredentials![0].collectedInputs)
+            if (payload.subjectCredentials) {
+                console.log(payload.subjectCredentials[0].collectedInputs)
+            }
 
             const axiosConfig: AxiosRequestConfig = {
                 headers: {
