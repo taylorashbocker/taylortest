@@ -83,7 +83,7 @@ export default class RSARoutes {
                 secureID: req.body.secureID,
                 authnAttemptId: req.body.authnAttemptId,
                 inResponseTo: req.body.inResponseTo,
-                methodId: 'SECURID_NEXT_TOKENCODE'
+                methodId: 'SECURID'
             })
 
             const axiosConfig: AxiosRequestConfig = {
