@@ -703,6 +703,10 @@ export default class TypeTransformation extends BaseDomainClass {
             // because dates can be formatted in various ways, all we can really do for conversion is to
             // set it to string - Deep Lynx only checks to see if dates are strings currently
             case 'date': {
+                if (value instanceof Date) {
+                    return new Conversion({original_value: value, converted_value: value.toISOString()});
+                }
+
                 // if it's a number we assume we're dealing with unix time
                 if (typeof value === 'number') {
                     return new Conversion({original_value: value, converted_value: toDate(value).toISOString()});

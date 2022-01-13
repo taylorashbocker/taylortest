@@ -1218,7 +1218,6 @@ export default class TransformationDialog extends Vue {
 
   setDateConversionFormatStringRecord(formatString: string, metatypeKey: MetatypeKeyT) {
     const index = this.propertyMapping.findIndex(prop => prop.metatype_key_id === metatypeKey.id)
-    console.log(index)
 
     if(index != -1) {
       this.propertyMapping[index].date_conversion_format_string = formatString
