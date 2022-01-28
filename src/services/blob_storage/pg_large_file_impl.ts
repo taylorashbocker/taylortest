@@ -1,8 +1,6 @@
 import {BlobStorage, BlobUploadResponse} from './blob_storage';
 import Result from '../../common_classes/result';
 import {Readable, Writable} from 'stream';
-import * as fs from 'fs';
-import Logger from './../logger';
 import PostgresAdapter from '../../data_access_layer/mappers/db_adapters/postgres/postgres';
 const LargeObjectManager = require('pg-large-object').LargeObjectManager;
 const digestStream = require('digest-stream');
@@ -92,7 +90,6 @@ export default class LargeObject implements BlobStorage {
                                         .catch((e) => reject(e));
                                 });
 
-                                // Upload an image
                                 stream?.pipe(dstream).pipe(writeStream);
                             });
                         })
