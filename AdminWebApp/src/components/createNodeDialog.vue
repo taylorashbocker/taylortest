@@ -43,6 +43,35 @@
           </v-row>
         </v-container>
       </v-card-text>
+
+      <v-expansion-panels>
+                    <v-expansion-panel>
+                      <v-expansion-panel-header color="red"><span style="color:white">{{$t('createDataSource.dangerZone')}}</span></v-expansion-panel-header>
+                      <v-expansion-panel-content>
+                        <v-combobox
+                            style="margin-top: 10px"
+                            clearable
+                            multiple
+                            small-chips
+                            deletable-chips
+                            v-model="stopNodes"
+                            :label="$t('createDataSource.stopNodes')"
+                            :placeholder="$t('createDataSource.typeToAdd')"
+                        ></v-combobox>
+
+                        <v-combobox
+                            style="margin-top: 10px"
+                            clearable
+                            multiple
+                            small-chips
+                            deletable-chips
+                            v-model="valueNodes"
+                            :label="$t('createDataSource.valueNodes')"
+                            :placeholder="$t('createDataSource.typeToAdd')"
+                        ></v-combobox>
+                      </v-expansion-panel-content>
+                    </v-expansion-panel>
+                  </v-expansion-panels>
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="blue darken-1" text @click="dialog = false" >{{$t("createNode.cancel")}}</v-btn>
