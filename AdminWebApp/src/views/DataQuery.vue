@@ -118,6 +118,7 @@
                   >
                     <div class="mt-2 pt-3 px-5 pb-5 height-full">
                       <h4 class="primary--text">{{$t('dataQuery.nodeInformation')}}</h4>
+                      <export-node v-if="currentNodeInfo !== null"></export-node>
                       <json-view
                           v-if="currentNodeInfo !== null"
                           class="json-viewer px-1 py-5 text-wrap"
@@ -144,13 +145,14 @@ import NodeFilesDialog from "@/components/nodeFilesDialog.vue";
 import {Component, Prop, Vue} from "vue-property-decorator";
 import {NodeT} from "@/api/types";
 import IfcViewer from "@/components/ifcViewer.vue";
+import ExportNode from "@/components/exportNode.vue"
 
 import {ResultSet} from "@/components/queryBuilder/queryBuilder.vue";
 import {mdiFileDocumentMultiple} from "@mdi/js";
 let resolveCy: any = null
 export const cyPromise = new Promise(resolve => (resolveCy = resolve))
 
-@Component({components: {QueryBuilder, NodeFilesDialog}})
+@Component({components: {QueryBuilder, NodeFilesDialog, ExportNode}})
 export default class DataQuery extends Vue {
   @Prop()
   readonly containerID!: string
