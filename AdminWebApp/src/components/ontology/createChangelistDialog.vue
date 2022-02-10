@@ -73,6 +73,7 @@ export default class CreateChangelistDialog extends Vue {
 
     this.$client.createChangelist(this.containerID, {
       name: this.name as any,
+      base_ontology_version_id: this.$store.getters.selectedOntologyVersionID,
       container_id: this.containerID,
     })
         .then((changeList) => {

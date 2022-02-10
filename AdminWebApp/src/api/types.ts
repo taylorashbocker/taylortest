@@ -385,6 +385,7 @@ export type ChangelistT = {
     id?: string;
     container_id: string;
     name: string;
+    base_ontology_version_id?: string;
     status?: 'pending' | 'ready' | 'approved' | 'rejected' | 'applied' | 'deprecated';
     changelist?: object;
     applied_at?: string;

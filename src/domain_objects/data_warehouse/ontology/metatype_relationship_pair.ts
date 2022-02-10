@@ -106,6 +106,10 @@ export default class MetatypeRelationshipPair extends BaseDomainClass {
         return this.relationship!;
     }
 
+    private set _relationship(value: any) {
+        this.relationship = value;
+    }
+
     @IsNotEmpty()
     @IsString()
     @IsIn(['many:many', 'one:one', 'one:many', 'many:one'])
