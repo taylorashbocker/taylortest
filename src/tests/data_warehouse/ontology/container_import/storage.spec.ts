@@ -105,7 +105,7 @@ describe('A Container Import', async () => {
         expect(container.value).not.empty;
 
         return storage.Delete(container.value);
-    });
+    }).timeout(20000);
 
     it('can prevent container update when a metatype to be removed has associated data', async () => {
         // using the Document class/metatype

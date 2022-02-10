@@ -1,0 +1,1 @@
+ALTER TABLE changelists ADD COLUMN base_ontology_version_id bigint REFERENCES ontology_versions(id) ON UPDATE CASCADE ON DELETE SET NULL;

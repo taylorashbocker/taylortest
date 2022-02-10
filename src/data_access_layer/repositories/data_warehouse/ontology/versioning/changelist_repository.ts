@@ -1,26 +1,26 @@
 import RepositoryInterface, {QueryOptions, Repository} from '../../../repository';
-import Changelist, {ChangelistApproval} from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelist';
+import ChangelistRecord, {ChangelistApproval} from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelistRecord';
 import Result from '../../../../../common_classes/result';
 import ChangelistMapper from '../../../../mappers/data_warehouse/ontology/versioning/changelist_mapper';
 import {User} from '../../../../../domain_objects/access_management/user';
 import {PoolClient} from 'pg';
 import ChangelistApprovalMapper from '../../../../mappers/data_warehouse/ontology/versioning/changelist_approval_mapper';
 
-export default class ChangelistRepository extends Repository implements RepositoryInterface<Changelist> {
+export default class ChangelistRepository extends Repository implements RepositoryInterface<ChangelistRecord> {
     #mapper: ChangelistMapper = ChangelistMapper.Instance;
     #approvalMapper: ChangelistApprovalMapper = ChangelistApprovalMapper.Instance;
 
-    delete(t: Changelist): Promise<Result<boolean>> {
+    delete(t: ChangelistRecord): Promise<Result<boolean>> {
         if (t.id) return this.#mapper.Delete(t.id);
 
         return Promise.resolve(Result.Failure('record must have id'));
     }
 
-    findByID(id: string): Promise<Result<Changelist>> {
+    findByID(id: string): Promise<Result<ChangelistRecord>> {
         return this.#mapper.Retrieve(id);
     }
 
-    async save(c: Changelist, user: User): Promise<Result<boolean>> {
+    async save(c: ChangelistRecord, user: User): Promise<Result<boolean>> {
         const errors = await c.validationErrors();
         if (errors) {
             return Promise.resolve(Result.Failure(`changelist does not pass validation ${errors.join(',')}`));
@@ -101,10 +101,10 @@ export default class ChangelistRepository extends Repository implements Reposito
         return super.count();
     }
 
-    async list(options?: QueryOptions, transaction?: PoolClient): Promise<Result<Changelist[]>> {
+    async list(options?: QueryOptions, transaction?: PoolClient): Promise<Result<ChangelistRecord[]>> {
         return super.findAll(options, {
             transaction,
-            resultClass: Changelist,
+            resultClass: ChangelistRecord,
         });
     }
 }

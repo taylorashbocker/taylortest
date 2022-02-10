@@ -149,6 +149,16 @@ export default class MetatypeRelationshipPair extends BaseDomainClass {
     }
 }
 
+// an extension of the base type needed for editing and manipulating the changelist. Because a changelist needs to
+// contain both the original id and new one, a field needs to exist that can handle that, and we don't want it on the
+// base object
+export class MetatypeRelationshipPairChangelist extends MetatypeRelationshipPair {
+    new_id?: string;
+
+    new_origin_metatype_id?: string;
+    new_destination_metatype_id?: string;
+}
+
 // any specific validators should be specified here
 export function MetatypeRelationshipPairID(validationOptions?: ValidationOptions) {
     return (object: object, propertyName: string) => {

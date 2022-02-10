@@ -1,11 +1,12 @@
 import {BaseDomainClass} from '../../../common_classes/base_domain_class';
 import {IsBoolean, IsNotEmpty, IsOptional, IsString, MinLength, registerDecorator, ValidationArguments, ValidationOptions} from 'class-validator';
-import MetatypeRelationshipKey from './metatype_relationship_key';
+import MetatypeRelationshipKey, {MetatypeRelationshipKeyChangelist} from './metatype_relationship_key';
 import * as t from 'io-ts';
 import Result from '../../../common_classes/result';
 import {pipe} from 'fp-ts/pipeable';
 import {fold} from 'fp-ts/Either';
 import {Type} from 'class-transformer';
+import {MetatypeKeyChangelist} from './metatype_key';
 
 /*
     MetatypeRelationship represents a metatype relationship record in the Deep Lynx database and the various
@@ -237,6 +238,21 @@ export default class MetatypeRelationship extends BaseDomainClass {
         return new Promise((resolve) => {
             pipe(compiledType.decode(input), fold(this.onDecodeError(resolve), onValidateSuccess(resolve)));
         });
+    }
+}
+
+// an extension of the base type needed for editing and manipulating the changelist. Because a changelist needs to
+// contain both the original id and new one, a field needs to exist that can handle that, and we don't want it on the
+// base object
+export class MetatypeRelationshipChangelist extends MetatypeRelationship {
+    new_id?: string;
+
+    @Type(() => MetatypeRelationshipKeyChangelist)
+    keys: MetatypeRelationshipKeyChangelist[];
+
+    constructor(props: any, keys: MetatypeRelationshipKey[]) {
+        super(props);
+        this.keys = keys;
     }
 }
 

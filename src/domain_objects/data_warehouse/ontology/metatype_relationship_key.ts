@@ -90,3 +90,10 @@ export default class MetatypeRelationshipKey extends BaseDomainClass {
         }
     }
 }
+
+// an extension of the base type needed for editing and manipulating the changelist. Because a changelist needs to
+// contain both the original id and new one, a field needs to exist that can handle that, and we don't want it on the
+// base object
+export class MetatypeRelationshipKeyChangelist extends MetatypeRelationshipKey {
+    new_id?: string;
+}

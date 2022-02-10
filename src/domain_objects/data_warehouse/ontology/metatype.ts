@@ -1,6 +1,6 @@
 import {BaseDomainClass} from '../../../common_classes/base_domain_class';
 import {IsBoolean, IsNotEmpty, IsOptional, IsString, MinLength, registerDecorator, ValidationArguments, ValidationOptions} from 'class-validator';
-import MetatypeKey from './metatype_key';
+import MetatypeKey, {MetatypeKeyChangelist} from './metatype_key';
 import * as t from 'io-ts';
 import Result from '../../../common_classes/result';
 import {pipe} from 'fp-ts/lib/function';
@@ -249,6 +249,21 @@ export default class Metatype extends BaseDomainClass {
         return new Promise((resolve) => {
             pipe(compiledType.decode(input), fold(this.onDecodeError(resolve), onValidateSuccess(resolve)));
         });
+    }
+}
+
+// an extension of the base type needed for editing and manipulating the changelist. Because a changelist needs to
+// contain both the original id and new one, a field needs to exist that can handle that, and we don't want it on the
+// base object
+export class MetatypeChangelist extends Metatype {
+    new_id?: string;
+
+    @Type(() => MetatypeKeyChangelist)
+    keys: MetatypeKeyChangelist[];
+
+    constructor(input: any, keys: MetatypeKey[]) {
+        super(input);
+        this.keys = keys;
     }
 }
 

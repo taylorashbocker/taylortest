@@ -2,7 +2,7 @@ import {Application, NextFunction, Request, Response} from 'express';
 import {authInContainer} from '../../../../middleware';
 import ChangelistRepository from '../../../../../data_access_layer/repositories/data_warehouse/ontology/versioning/changelist_repository';
 import {plainToClass} from 'class-transformer';
-import Changelist from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelist';
+import ChangelistRecord from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelistRecord';
 import Result from '../../../../../common_classes/result';
 
 const repo = new ChangelistRepository();
@@ -59,7 +59,7 @@ export default class ChangelistRoutes {
     }
 
     private static createChangelist(req: Request, res: Response, next: NextFunction) {
-        const toCreate = plainToClass(Changelist, req.body as object);
+        const toCreate = plainToClass(ChangelistRecord, req.body as object);
 
         if (req.container) {
             toCreate.container_id = req.container.id;
@@ -86,7 +86,7 @@ export default class ChangelistRoutes {
 
     private static updateChangelist(req: Request, res: Response, next: NextFunction) {
         if (req.changelist) {
-            const toUpdate = plainToClass(Changelist, req.body as object);
+            const toUpdate = plainToClass(ChangelistRecord, req.body as object);
 
             Object.assign(req.changelist, toUpdate);
 

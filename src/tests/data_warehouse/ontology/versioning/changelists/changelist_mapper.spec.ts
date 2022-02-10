@@ -6,7 +6,7 @@ import PostgresAdapter from '../../../../../data_access_layer/mappers/db_adapter
 import ContainerMapper from '../../../../../data_access_layer/mappers/data_warehouse/ontology/container_mapper';
 import Logger from '../../../../../services/logger';
 import Container from '../../../../../domain_objects/data_warehouse/ontology/container';
-import Changelist from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelist';
+import ChangelistRecord from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelistRecord';
 
 describe('A Changelist Mapper', async () => {
     let containerID: string = process.env.TEST_CONTAINER_ID || '';
@@ -44,10 +44,9 @@ describe('A Changelist Mapper', async () => {
 
         const changelist = await mapper.Create(
             'test suite',
-            new Changelist({
+            new ChangelistRecord({
                 container_id: containerID,
                 name: 'Test Changelist',
-                changelist: {test: 'test'},
             }),
         );
 
@@ -63,10 +62,9 @@ describe('A Changelist Mapper', async () => {
 
         const changelist = await mapper.Create(
             'test suite',
-            new Changelist({
+            new ChangelistRecord({
                 container_id: containerID,
                 name: 'Test Changelist',
-                changelist: {test: 'test'},
             }),
         );
 

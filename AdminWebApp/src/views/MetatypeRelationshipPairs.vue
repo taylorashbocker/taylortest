@@ -137,6 +137,45 @@ export default class MetatypeRelationshipPairs extends Vue {
     ]
   }
 
+  countAndLoadPairs() {
+    this.$client.listMetatypeRelationshipPairs(this.containerID, {
+      ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+      count: true,
+      name: (this.name !== "") ? this.name : undefined,
+      description: (this.description !== "") ? this.description : undefined,
+    })
+        .then(relationshipCount => {
+          this.relationshipPairCount= relationshipCount as number
+
+          this.loading = true
+          this.metatypeRelationships = []
+
+          const {page, itemsPerPage, sortBy, sortDesc} = this.options;
+          let sortParam: string | undefined
+          let sortDescParam: boolean | undefined
+
+          const pageNumber = page - 1
+          if(sortBy && sortBy.length >= 1) sortParam = sortBy[0]
+          if(sortDesc) sortDescParam = sortDesc[0]
+
+          this.$client.listMetatypeRelationshipPairs(this.containerID, {
+            ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+            limit: itemsPerPage,
+            offset: itemsPerPage * pageNumber,
+            sortBy: sortParam,
+            sortDesc: sortDescParam,
+            name: (this.name !== "") ? this.name : undefined,
+            description: (this.description !== "") ? this.description : undefined,
+          })
+              .then((results) => {
+                this.relationshipPairs = results as MetatypeRelationshipPairT[]
+                this.loading = false
+              })
+              .catch((e: any) => this.errorMessage = e)
+        })
+        .catch(e => this.errorMessage = e)
+  }
+
   countRelationshipPairs() {
     this.$client.listMetatypeRelationshipPairs(this.containerID, {
       ontologyVersion: this.$store.getters.selectedOntologyVersionID,

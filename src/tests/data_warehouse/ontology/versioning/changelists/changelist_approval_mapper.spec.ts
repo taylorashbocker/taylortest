@@ -6,7 +6,7 @@ import PostgresAdapter from '../../../../../data_access_layer/mappers/db_adapter
 import ContainerMapper from '../../../../../data_access_layer/mappers/data_warehouse/ontology/container_mapper';
 import Logger from '../../../../../services/logger';
 import Container from '../../../../../domain_objects/data_warehouse/ontology/container';
-import Changelist, {ChangelistApproval} from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelist';
+import ChangelistRecord, {ChangelistApproval} from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelistRecord';
 import ChangelistApprovalMapper from '../../../../../data_access_layer/mappers/data_warehouse/ontology/versioning/changelist_approval_mapper';
 
 describe('A Changelist Approval Mapper', async () => {
@@ -46,10 +46,9 @@ describe('A Changelist Approval Mapper', async () => {
 
         const changelist = await mapper.Create(
             'test suite',
-            new Changelist({
+            new ChangelistRecord({
                 container_id: containerID,
                 name: 'Test Changelist',
-                changelist: {test: 'test'},
             }),
         );
 
@@ -76,10 +75,9 @@ describe('A Changelist Approval Mapper', async () => {
 
         const changelist = await mapper.Create(
             'test suite',
-            new Changelist({
+            new ChangelistRecord({
                 container_id: containerID,
                 name: 'Test Changelist',
-                changelist: {test: 'test'},
             }),
         );
 

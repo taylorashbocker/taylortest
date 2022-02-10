@@ -3,7 +3,7 @@
     <ontology-version-toolbar
         v-if="$store.getters.ontologyVersioningEnabled"
         :containerID="containerID"
-        @selected="loadMetatypes">
+        @selected="countAndLoadMetatypes">
     </ontology-version-toolbar>
     <v-data-table
         :headers="headers()"
@@ -132,6 +132,46 @@ export default class Metatypes extends Vue {
       { text: this.$t('metatypes.description'), value: 'description'},
       { text: this.$t('metatypes.actions'), value: 'actions', sortable: false }
     ]
+  }
+
+  countAndLoadMetatypes() {
+    this.$client.listMetatypes(this.containerID, {
+      ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+      count: true,
+      name: (this.name !== "") ? this.name : undefined,
+      description: (this.description !== "") ? this.description : undefined,
+    })
+        .then(metatypesCount => {
+          this.metatypesCount = metatypesCount as number
+
+          this.metatypesLoading = true
+          this.metatypes = []
+
+          const {page, itemsPerPage, sortBy, sortDesc} = this.options;
+          let sortParam: string | undefined
+          let sortDescParam: boolean | undefined
+
+          const pageNumber = page - 1
+          if(sortBy && sortBy.length >= 1) sortParam = sortBy[0]
+          if(sortDesc) sortDescParam = sortDesc[0]
+
+          this.$client.listMetatypes(this.containerID, {
+            limit: itemsPerPage,
+            offset: itemsPerPage * pageNumber,
+            ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+            sortBy: sortParam,
+            sortDesc: sortDescParam,
+            name: (this.name !== "") ? this.name : undefined,
+            description: (this.description !== "") ? this.description : undefined,
+          })
+              .then((results) => {
+                this.metatypesLoading = false
+                this.metatypes = results as MetatypeT[]
+                this.$forceUpdate()
+              })
+              .catch((e: any) => this.errorMessage = e)
+        })
+        .catch(e => this.errorMessage = e)
   }
 
   countMetatypes() {

@@ -3,7 +3,7 @@
     <ontology-version-toolbar
         v-if="$store.getters.ontologyVersioningEnabled"
         :containerID="containerID"
-        @selected="loadMetatypeRelationships">
+        @selected="countAndLoadRelationships">
     </ontology-version-toolbar>
     <v-data-table
         :headers="headers()"
@@ -131,6 +131,45 @@ export default class MetatypeRelationships extends Vue {
       { text: this.$t('metatypeRelationships.description'), value: 'description'},
       { text: this.$t('metatypeRelationships.actions'), value: 'actions', sortable: false }
     ]
+  }
+
+  countAndLoadRelationships() {
+    this.$client.listMetatypeRelationships(this.containerID, {
+      count: true,
+      ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+      name: (this.name !== "") ? this.name : undefined,
+      description: (this.description !== "") ? this.description : undefined,
+    })
+        .then(relationshipCount => {
+          this.metatypeRelationshipCount = relationshipCount as number
+          this.loading = true
+          this.metatypeRelationships = []
+
+          const {page, itemsPerPage, sortBy, sortDesc} = this.options;
+          let sortParam: string | undefined
+          let sortDescParam: boolean | undefined
+
+          const pageNumber = page - 1
+          if(sortBy && sortBy.length >= 1) sortParam = sortBy[0]
+          if(sortDesc) sortDescParam = sortDesc[0]
+
+          this.$client.listMetatypeRelationships(this.containerID, {
+            ontologyVersion: this.$store.getters.selectedOntologyVersionID,
+            limit: itemsPerPage,
+            offset: itemsPerPage * pageNumber,
+            sortBy: sortParam,
+            sortDesc: sortDescParam,
+            name: (this.name !== "") ? this.name : undefined,
+            description: (this.description !== "") ? this.description : undefined,
+          })
+              .then((results) => {
+                this.loading = false
+                this.metatypeRelationships = results as MetatypeRelationshipT[]
+                this.$forceUpdate()
+              })
+              .catch((e: any) => this.errorMessage = e)
+        })
+        .catch(e => this.errorMessage = e)
   }
 
   countRelationships() {

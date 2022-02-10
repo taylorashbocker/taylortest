@@ -5,7 +5,7 @@ import PostgresAdapter from '../../../../../data_access_layer/mappers/db_adapter
 import ContainerMapper from '../../../../../data_access_layer/mappers/data_warehouse/ontology/container_mapper';
 import Logger from '../../../../../services/logger';
 import Container from '../../../../../domain_objects/data_warehouse/ontology/container';
-import Changelist from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelist';
+import ChangelistRecord, {Changelist} from '../../../../../domain_objects/data_warehouse/ontology/versioning/changelistRecord';
 import ChangelistRepository from '../../../../../data_access_layer/repositories/data_warehouse/ontology/versioning/changelist_repository';
 import {User} from '../../../../../domain_objects/access_management/user';
 import UserMapper from '../../../../../data_access_layer/mappers/access_management/user_mapper';
@@ -61,10 +61,14 @@ describe('A Changelist Repository', async () => {
     it('can be saved', async () => {
         const repo = new ChangelistRepository();
 
-        const changelist = new Changelist({
+        const changelist = new ChangelistRecord({
             container_id: containerID,
             name: 'Test Changelist',
-            changelist: {test: 'test'},
+            changelist: new Changelist({
+                metatypes: [],
+                metatypeRelationships: [],
+                metatypeRelationshipPairs: [],
+            }),
         });
 
         const result = await repo.save(changelist, user);
@@ -77,10 +81,9 @@ describe('A Changelist Repository', async () => {
     it('can be updated', async () => {
         const repo = new ChangelistRepository();
 
-        const changelist = new Changelist({
+        const changelist = new ChangelistRecord({
             container_id: containerID,
             name: 'Test Changelist',
-            changelist: {test: 'test'},
         });
 
         let result = await repo.save(changelist, user);
@@ -88,7 +91,11 @@ describe('A Changelist Repository', async () => {
         expect(changelist.id).not.undefined;
 
         changelist.name = 'Test Changelist 2';
-        changelist.changelist = {bob: 'bob'};
+        changelist.changelist = new Changelist({
+            metatypes: [],
+            metatypeRelationships: [],
+            metatypeRelationshipPairs: [],
+        });
 
         result = await repo.save(changelist, user);
         expect(result.isError).false;
