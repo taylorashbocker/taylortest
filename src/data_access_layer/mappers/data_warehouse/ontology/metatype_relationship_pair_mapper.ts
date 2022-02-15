@@ -49,6 +49,10 @@ export default class MetatypeRelationshipPairMapper extends Mapper {
         return super.retrieve(this.retrieveStatement(id), {resultClass});
     }
 
+    public async RetrieveByMetatype(metatypeID: string): Promise<Result<MetatypeRelationshipPair[]>> {
+        return super.rows(this.retrieveByMetatypeStatement(metatypeID), {resultClass: MetatypeRelationshipPair});
+    }
+
     public async Update(userID: string, p: MetatypeRelationshipPair, transaction?: PoolClient): Promise<Result<MetatypeRelationshipPair>> {
         const r = await super.run(this.fullUpdateStatement(userID, p), {
             transaction,
@@ -161,5 +165,12 @@ export default class MetatypeRelationshipPairMapper extends Mapper {
             text: `SELECT * FROM metatype_relationship_pairs WHERE id = $1`,
             values: [pairID],
         };
+    }
+
+    private retrieveByMetatypeStatement(metatypeID: string): QueryConfig {
+        return{
+            text: `SELECT * FROM metatype_relationship_pairs WHERE origin_metatype_id = $1 OR destination_metatype_id = $1`,
+            values: [metatypeID],
+        }
     }
 }

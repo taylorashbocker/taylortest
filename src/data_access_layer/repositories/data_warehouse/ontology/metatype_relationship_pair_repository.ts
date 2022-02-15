@@ -65,6 +65,13 @@ export default class MetatypeRelationshipPairRepository extends Repository imple
         return Promise.resolve(retrieved);
     }
 
+    async findByMetatypeID(metatype_id: string): Promise<Result<MetatypeRelationshipPair[]>> {
+
+        const retrieved = await this.#mapper.RetrieveByMetatype(metatype_id);
+
+        return Promise.resolve(retrieved);
+    }
+
     // save will not save the origin/destination metatypes or metatype relationship unless the
     // user specifies. This is because we might be working with this object with a bare
     // minimum of info about those types

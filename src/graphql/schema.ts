@@ -22,15 +22,19 @@ import Metatype from '../domain_objects/data_warehouse/ontology/metatype';
 import {stringToValidPropertyName} from '../services/utilities';
 import NodeRepository from '../data_access_layer/repositories/data_warehouse/data/node_repository';
 import Logger from '../services/logger';
+import MetatypeRelationshipPairRepository from '../data_access_layer/repositories/data_warehouse/ontology/metatype_relationship_pair_repository';
+import { booleanAlgebraBoolean } from 'fp-ts/lib/BooleanAlgebra';
 
 // GraphQLSchemaGenerator takes a container and generates a valid GraphQL schema for all contained metatypes. This will
 // allow users to query and filter data based on node type, the various properties that type might have, and other bits
 // of metadata.
 export default class GraphQLSchemaGenerator {
     #metatypeRepo: MetatypeRepository;
+    #metatypePairRepo: MetatypeRelationshipPairRepository;
 
     constructor() {
         this.#metatypeRepo = new MetatypeRepository();
+        this.#metatypePairRepo = new MetatypeRelationshipPairRepository();
     }
 
     // generate requires a containerID because the schema it generates is based on a user's ontology and ontologies are
@@ -39,6 +43,28 @@ export default class GraphQLSchemaGenerator {
         // fetch all metatypes for the container, with their keys - the single most expensive call of this function
         const metatypeResults = await this.#metatypeRepo.where().containerID('eq', containerID).list(true);
         if (metatypeResults.isError) return Promise.resolve(Result.Pass(metatypeResults));
+
+        // fetch all metatype relationship pairs - also expensive
+        const metatypePairResults = await this.#metatypePairRepo.where().containerID('eq', containerID).list();
+        if (metatypePairResults.isError) return Promise.resolve(Result.Pass(metatypePairResults));
+
+        const metatypePairObj: {[key: string]: any} = {};
+
+        Object.keys(metatypePairResults.value[0]).forEach((key) => {
+            metatypePairObj[stringToValidPropertyName(key)] =
+            'something here'
+        })
+        console.log(metatypePairObj);
+
+        const relationshipType = new GraphQLObjectType({
+            name: 'relationship_name',
+            fields: {
+                metatypeRelationship: {type: GraphQLString}
+            }
+        })
+
+        // for each relationship type:
+        // create graphql object type with a field for each related metatype
 
         const metatypeGraphQLObjects: {[key: string]: any} = {};
 
@@ -88,6 +114,21 @@ export default class GraphQLSchemaGenerator {
                             const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
                             output._record = {type: recordInfo};
 
+                            // metatypePairResults.value.forEach((pair) => {
+                            //     if(
+                            //         (metatype.id === pair.originMetatype!.id)
+                            //         // is destination needed or only origin? syntactically,
+                            //         // origin makes more sense since it comes first, but
+                            //         // say a user wants to search on relationship type even
+                            //         // if this metatype is on the receiving end? If only origin,
+                            //         // this should be explained in documentation.
+                    
+                            //         // || (metatype.id === pair.destinationMetatype!.id)
+                            //     ){
+                            //         console.log(pair.relationship);
+                            //     }
+                            // })
+                            
                             metatype.keys?.forEach((metatypeKey) => {
                                 // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
                                 // valid graphql property names. While we force the user to meet these requirements at key
@@ -222,7 +263,7 @@ export default class GraphQLSchemaGenerator {
                 repo = repo.and().property(propertyMap[key].name, query[0], query[1], propertyMap[key].data_type);
             });
 
-            // wrapping the end resolver in a promise insures that we don't return prior to all results being
+            // wrapping the end resolver in a promise ensures that we don't return prior to all results being
             // fetched
             // eslint-disable-next-line @typescript-eslint/no-misused-promises
             return new Promise((resolve) =>
