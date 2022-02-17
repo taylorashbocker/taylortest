@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" max-width="500px" @click:outside="clearNew">
+  <v-dialog max-width="500px" v-model="dialog" @click:outside="clearNew">
     <template v-slot:activator="{ on }">
       <v-icon
           v-show="icon"
@@ -29,8 +29,16 @@
                     :label="$t('createChangelist.name')"
                     required
                 ></v-text-field>
+                <v-textarea
+                    v-model="description"
+                    :label="$t('createChangelist.description')"
+                    required
+                >
+                </v-textarea>
+
 
               </v-form>
+              <p><b>Note:</b> {{$t('createChangelist.creationNote')}}</p>
             </v-col>
           </v-row>
         </v-container>
@@ -39,7 +47,7 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn color="blue darken-1" text @click="clearNew">{{ $t("createChangelist.cancel") }}</v-btn>
-        <v-btn color="blue darken-1" text @click="createChangelist"><span v-if="!loading">{{ $t("createChangelist.save") }}</span>
+        <v-btn color="blue darken-1" text @click="createVersion"><span v-if="!loading">{{ $t("createChangelist.save") }}</span>
           <span v-if="loading"><v-progress-circular indeterminate></v-progress-circular></span>
         </v-btn>
       </v-card-actions>
@@ -51,11 +59,12 @@
 import {Component, Prop, Vue} from 'vue-property-decorator'
 
 @Component
-export default class CreateChangelistDialog extends Vue {
+export default class CreateOntologyVersionDialog extends Vue {
   errorMessage = ""
   loading = false
   dialog = false
   name = null
+  description = null
 
   @Prop({required: true})
   containerID!: string;
@@ -65,22 +74,24 @@ export default class CreateChangelistDialog extends Vue {
 
   clearNew() {
     this.name = null
+    this.description = null
     this.dialog = false
   }
 
-  createChangelist() {
+  createVersion() {
     this.loading = true
 
-    this.$client.createChangelist(this.containerID, {
+    this.$client.createOntologyVersion(this.containerID, {
       name: this.name as any,
+      description: this.description as any,
       container_id: this.containerID,
-    })
-        .then((changeList) => {
+    }, this.$store.getters.selectedOntologyVersionID)
+        .then((version) => {
           this.loading = false
           this.clearNew()
-          this.$emit("changelistCreated", changeList)
+          this.$emit("versionCreated", version)
 
-          this.$store.dispatch('changeActiveChangelist', changeList)
+          this.$store.dispatch('changePendingOntologyVersion', version)
           this.dialog = false
           this.errorMessage = ""
         })
