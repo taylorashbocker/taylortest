@@ -81,21 +81,33 @@ export default class GraphQLSchemaGenerator {
             },
         });
 
+        const relationshipType = new GraphQLObjectType({
+            name: 'relationshipType',
+            fields: {
+                origin_metatype_id: {type: GraphQLString},
+                origin_metatype_name: {type: GraphQLString},
+                relationship_id: {type: GraphQLString},
+                relationship_name: {type: GraphQLString},
+                destination_metatype_id: {type: GraphQLString},
+                destination_metatype_name: {type: GraphQLString}
+            }
+        })
+
         metatypeResults.value.forEach((metatype) => {
             
-            // create an object in which we can store metatype relationships.
-            // As it is fairly common for one node to have the same relationship with various nodes
-            // (eg. A : decomposedBy : B and A : decomposedBy : C), the goal here is to
-            // store each unique relationship name as a key with a list of values.
-            // The metatype fields block may then populate the object for the appropriate key.
+            // create an object in which we can store metatype relationships. Object is created
+            // dynamically due to different possible relationship types. Each relationship type
+            // should be a key to a list of metatype values, as one metatype can have the same
+            // kind of relationship to several other metatypes.
             const relationshipGraphQLObjects: {[key: string]: any} = {};
 
             metatypePairResults.value.forEach((pair) => {
                 if(
                     (metatype.id === pair.originMetatype!.id)
                 ){
-                    let rel = stringToValidPropertyName(pair.name.split(' : ')[1]);
-                    let dest = stringToValidPropertyName(pair.name.split(' : ')[2]);
+                    const fix = JSON.parse(JSON.stringify(pair))
+                    const rel = stringToValidPropertyName(fix.relationship_pair_name)
+                    const dest = stringToValidPropertyName(fix.destination_metatype_name)
                     if(!(rel in relationshipGraphQLObjects)){
                         relationshipGraphQLObjects[rel] = []
                     }
@@ -107,7 +119,7 @@ export default class GraphQLSchemaGenerator {
             console.log(metatypeName, relationshipGraphQLObjects);
             
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
-                args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}},
+                args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}, _relationship: {type: relationshipType}},
                 description: metatype.description,
                 type: new GraphQLList(
                     new GraphQLObjectType({
