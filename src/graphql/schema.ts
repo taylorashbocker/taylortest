@@ -23,9 +23,6 @@ import {stringToValidPropertyName} from '../services/utilities';
 import NodeRepository from '../data_access_layer/repositories/data_warehouse/data/node_repository';
 import Logger from '../services/logger';
 import MetatypeRelationshipPairRepository from '../data_access_layer/repositories/data_warehouse/ontology/metatype_relationship_pair_repository';
-import { booleanAlgebraBoolean } from 'fp-ts/lib/BooleanAlgebra';
-import { parseISO } from 'date-fns';
-import { paramsToString } from 'casbin/lib/cjs/util';
 
 // GraphQLSchemaGenerator takes a container and generates a valid GraphQL schema for all contained metatypes. This will
 // allow users to query and filter data based on node type, the various properties that type might have, and other bits
@@ -49,8 +46,6 @@ export default class GraphQLSchemaGenerator {
         // fetch all metatype relationship pairs - also expensive
         const metatypePairResults = await this.#metatypePairRepo.where().containerID('eq', containerID).list();
         if (metatypePairResults.isError) return Promise.resolve(Result.Pass(metatypePairResults));
-
-        console.log(metatypePairResults);
 
         const metatypeGraphQLObjects: {[key: string]: any} = {};
 
@@ -87,18 +82,29 @@ export default class GraphQLSchemaGenerator {
         });
 
         metatypeResults.value.forEach((metatype) => {
-
+            
+            // create an object in which we can store metatype relationships.
+            // As it is fairly common for one node to have the same relationship with various nodes
+            // (eg. A : decomposedBy : B and A : decomposedBy : C), the goal here is to
+            // store each unique relationship name as a key with a list of values.
+            // The metatype fields block may then populate the object for the appropriate key.
             const relationshipGraphQLObjects: {[key: string]: any} = {};
 
             metatypePairResults.value.forEach((pair) => {
                 if(
                     (metatype.id === pair.originMetatype!.id)
                 ){
-                    relationshipGraphQLObjects[stringToValidPropertyName(pair.relationship_id)] = [];
+                    let rel = stringToValidPropertyName(pair.name.split(' : ')[1]);
+                    let dest = stringToValidPropertyName(pair.name.split(' : ')[2]);
+                    if(!(rel in relationshipGraphQLObjects)){
+                        relationshipGraphQLObjects[rel] = []
+                    }
+                    relationshipGraphQLObjects[rel].push(dest);
                 }
             })
 
-            console.log(relationshipGraphQLObjects);
+            let metatypeName = stringToValidPropertyName(metatype.name);
+            console.log(metatypeName, relationshipGraphQLObjects);
             
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
                 args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}},
