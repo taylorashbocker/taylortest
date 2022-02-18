@@ -87,9 +87,32 @@ export default class GraphQLSchemaGenerator {
             // dynamically due to different possible relationship types. Each relationship type
             // should be a key to a list of metatype values, as one metatype can have the same
             // kind of relationship to several other metatypes.
-            const relationshipType = new GraphQLObjectType({
-                name: 'relationshipType',
+            const relationshipInputType = new GraphQLObjectType({
+                name: 'relationship_input',
                 // needed because the return type accepts an object, but throws a fit about it
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                fields: () => {
+                    const output: {[key: string]: string[]} = {};
+                    metatypePairResults.value.forEach((obj) => {
+                        if(
+                            (metatype.id === obj.originMetatype!.id)
+                        ){
+                            const pair = JSON.parse(JSON.stringify(obj))
+                            const rel = stringToValidPropertyName(pair.relationship_pair_name)
+                            if(!(rel in output)){
+                                output[rel] = [];
+                            }
+                            const dest = stringToValidPropertyName(pair.destination_metatype_name)
+                            output[rel].push(dest);
+                        }
+                    })
+                    return output;
+                }
+            })
+
+            const relationshipInfo = new GraphQLObjectType({
+                name: 'relationshipInfo',
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 fields: () => {
@@ -112,18 +135,17 @@ export default class GraphQLSchemaGenerator {
             })
             
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
-                args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}, _relationship: {type: relationshipType}},
+                args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}, _relationship: {type: relationshipInputType}},
                 description: metatype.description,
                 type: new GraphQLList(
                     new GraphQLObjectType({
                         name: stringToValidPropertyName(metatype.name),
-                        // needed because the return type accepts an object, but throws a fit about it
                         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                         // @ts-ignore
                         fields: () => {
                             const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
                             output._record = {type: recordInfo};
-                            output._relationship = {type: relationshipType};
+                            output._relationship = {type: relationshipInfo};
                             
                             metatype.keys?.forEach((metatypeKey) => {
                                 // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
@@ -253,7 +275,7 @@ export default class GraphQLSchemaGenerator {
             // iterate through the input object, ignoring reserved properties and adding all others to
             // the query as property queries
             Object.keys(input).forEach((key) => {
-                if (key === '_record') return;
+                if ((key === '_record') || (key === '_relationship')) return;
 
                 const query = this.breakQuery(String(input[key]));
                 repo = repo.and().property(propertyMap[key].name, query[0], query[1], propertyMap[key].data_type);
