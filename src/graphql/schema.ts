@@ -81,61 +81,80 @@ export default class GraphQLSchemaGenerator {
             },
         });
 
+        /*
+        const relTypes: any[] = [];
+        metatypePairResults.value.forEach((pair) => {
+            // get the relationship and store it as a valid property name ('child of' contains spaces)
+            // alternatively could find some way to instantiate and access metatype pair results for relationship name
+            const rel = stringToValidPropertyName(pair.name.split(' : ')[1]);
+            if(!(relTypes.includes(rel))){
+                relTypes.push(rel);
+            }
+        });
+
+        const relationshipInfo = new GraphQLObjectType({
+            name: 'relationshipInfo',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            fields: () => {
+                const output: {[key: string]: any} = {};
+                relTypes.forEach((rel) => {
+                    output[rel] = {type: GraphQLBoolean}
+                })
+                return output;
+            }
+        })
+
+        const relationshipInputType = new GraphQLInputObjectType({
+            name: 'relationship_input',
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            fields: () => {
+                const output: {[key: string]: any} = {};
+                relTypes.forEach((rel) => {
+                    output[rel] = {type: GraphQLBoolean}
+                })
+                return output;
+            }
+        })
+        */
+
         metatypeResults.value.forEach((metatype) => {
             
+            /*
             // create an object in which we can store metatype relationships. Object is created
             // dynamically due to different possible relationship types. Each relationship type
             // should be a key to a list of metatype values, as one metatype can have the same
             // kind of relationship to several other metatypes.
-            const relationshipInputType = new GraphQLObjectType({
-                name: 'relationship_input',
-                // needed because the return type accepts an object, but throws a fit about it
+            const relationshipInputType = new GraphQLInputObjectType({
+                name: 'relationshipInput_' + stringToValidPropertyName(metatype.name),
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
                 fields: () => {
-                    const output: {[key: string]: string[]} = {};
-                    metatypePairResults.value.forEach((obj) => {
-                        if(
-                            (metatype.id === obj.originMetatype!.id)
-                        ){
-                            const pair = JSON.parse(JSON.stringify(obj))
-                            const rel = stringToValidPropertyName(pair.relationship_pair_name)
-                            if(!(rel in output)){
-                                output[rel] = [];
+                    const fieldOutput: {[key: string]: any} = {};
+                    metatypePairResults.value.forEach((pair) => {
+                        if(pair.origin_metatype_id === metatype.id){
+                            const rel = stringToValidPropertyName(pair.name.split(' : ')[1])
+                            const dest = stringToValidPropertyName(pair.name.split(' : ')[2])
+                            if(!(rel in fieldOutput)){
+                                fieldOutput[rel] = {type: GraphQLString}
+                                // fieldOutput[rel] = [];
                             }
-                            const dest = stringToValidPropertyName(pair.destination_metatype_name)
-                            output[rel].push(dest);
+                            // fieldOutput[rel].push(dest)
+                            // fieldOutput[rel][fieldOutput[rel].indexOf(dest)] = {type: GraphQLString}
                         }
                     })
-                    return output;
+                    console.log(fieldOutput);
+                    return fieldOutput;
                 }
             })
-
-            const relationshipInfo = new GraphQLObjectType({
-                name: 'relationshipInfo',
-                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                // @ts-ignore
-                fields: () => {
-                    const output: {[key: string]: string[]} = {};
-                    metatypePairResults.value.forEach((obj) => {
-                        if(
-                            (metatype.id === obj.originMetatype!.id)
-                        ){
-                            const pair = JSON.parse(JSON.stringify(obj))
-                            const rel = stringToValidPropertyName(pair.relationship_pair_name)
-                            if(!(rel in output)){
-                                output[rel] = [];
-                            }
-                            const dest = stringToValidPropertyName(pair.destination_metatype_name)
-                            output[rel].push(dest);
-                        }
-                    })
-                    return output;
-                }
-            })
+            */
             
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
-                args: {...this.inputFieldsForMetatype(metatype), _record: {type: recordInputType}, _relationship: {type: relationshipInputType}},
+                args: {...this.inputFieldsForMetatype(metatype),
+                _record: {type: recordInputType},
+                // _relationship: {type: relationshipInputType},
+            },
                 description: metatype.description,
                 type: new GraphQLList(
                     new GraphQLObjectType({
@@ -145,7 +164,7 @@ export default class GraphQLSchemaGenerator {
                         fields: () => {
                             const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
                             output._record = {type: recordInfo};
-                            output._relationship = {type: relationshipInfo};
+                            // output._relationship = {type: relationshipInfo};
                             
                             metatype.keys?.forEach((metatypeKey) => {
                                 // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
@@ -211,7 +230,6 @@ export default class GraphQLSchemaGenerator {
                                     }
                                 }
                             });
-                            console.log(output);
                             return output;
                         },
                     }),
@@ -255,6 +273,13 @@ export default class GraphQLSchemaGenerator {
                     repo = repo.and().importDataID(query[0], query[1]);
                 }
             }
+
+            // the relationship with other nodes needs to be filtered not based exclusively on the node, but
+            // on the metatype relationship pair itself.
+            // if (input._relationship) {
+            //     let repo = new MetatypeRelationshipPairRepository();
+            //     repo = repo.where().containerID('eq', containerID).and().origin_metatype_id('eq', metatype.id);
+            // }
 
             // we must map out what the graphql refers to a metatype's keys are vs. what they actually are so
             // that we can map the query properly
@@ -304,6 +329,9 @@ export default class GraphQLSchemaGenerator {
                                     properties[stringToValidPropertyName(key)] = node.properties[key];
                                 });
                             }
+
+                            const _relationship: {} = {};
+                            // must return if relationship exists where node id matches and relationship name is relationship
 
                             nodeOutput.push({
                                 ...properties,
