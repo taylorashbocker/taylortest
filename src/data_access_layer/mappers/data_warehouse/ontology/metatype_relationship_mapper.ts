@@ -89,14 +89,14 @@ export default class MetatypeRelationshipMapper extends Mapper {
     // must run statement against the view so that we get the parent id
     private retrieveStatement(relationshipID: string): QueryConfig {
         return {
-            text: `SELECT * FROM metatype_relationships_view WHERE id = $1 AND deleted_at IS NULL`,
+            text: `SELECT * FROM metatype_relationships_view WHERE id = $1`,
             values: [relationshipID],
         };
     }
 
     private archiveStatement(relationshipID: string, userID: string): QueryConfig {
         return {
-            text: `UPDATE metatype_relationships SET deleted_at = NOW(), modified_by = $2  WHERE id = $1`,
+            text: `UPDATE metatype_relationships SET deleted_at = NOW(), modified_at = NOW(), modified_by = $2  WHERE id = $1`,
             values: [relationshipID, userID],
         };
     }

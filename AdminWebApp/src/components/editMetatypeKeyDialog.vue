@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialog" @click:outside="dialog = false" max-width="60%">
+  <v-dialog v-model="dialog" @click:outside="dialog = false" width="50%">
     <template v-slot:activator="{ on }">
       <v-icon
           v-if="icon"
@@ -183,6 +183,7 @@ export default class EditMetatypeKeyDialog extends Vue {
 
   editMetatypeKey() {
     if(this.selectedMetatypeKey) {
+      this.selectedMetatypeKey.container_id = this.metatype.container_id;
       this.$client.updateMetatypeKey(this.metatype.container_id,this.metatype.id, this.selectedMetatypeKey?.id!, this.selectedMetatypeKey)
           .then(result => {
             if(!result) {

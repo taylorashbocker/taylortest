@@ -103,6 +103,10 @@ export default class MetatypeRelationshipPairRoutes {
             repository = repository.and().metatypeID('eq', req.query.metatypeID);
         }
 
+        if (typeof req.query.ontologyVersion !== 'undefined' && (req.query.ontologyVersion as string) !== '') {
+            repository = repository.and().ontologyVersion('eq', req.query.ontologyVersion);
+        }
+
         if (req.query.count !== undefined && String(req.query.count).toLowerCase() === 'true') {
             repository
                 .count()
@@ -158,12 +162,21 @@ export default class MetatypeRelationshipPairRoutes {
 
     private static archiveMetatypeRelationshipPair(req: Request, res: Response, next: NextFunction) {
         if (req.metatypeRelationshipPair) {
-            repo.archive(req.currentUser!, req.metatypeRelationshipPair)
-                .then((result) => {
-                    result.asResponse(res);
-                })
-                .catch((err) => res.status(500).send(err))
-                .finally(() => next());
+            if (req.query.permanent !== undefined && String(req.query.permanent).toLowerCase() === 'true') {
+                repo.delete(req.metatypeRelationshipPair)
+                    .then((result) => {
+                        result.asResponse(res);
+                    })
+                    .catch((err) => res.status(500).send(err))
+                    .finally(() => next());
+            } else {
+                repo.archive(req.currentUser!, req.metatypeRelationshipPair)
+                    .then((result) => {
+                        result.asResponse(res);
+                    })
+                    .catch((err) => res.status(500).send(err))
+                    .finally(() => next());
+            }
         } else {
             Result.Failure('metatype relationship pair not found', 404).asResponse(res);
             next();

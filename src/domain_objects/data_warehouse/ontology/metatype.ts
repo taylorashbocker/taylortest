@@ -1,5 +1,5 @@
 import {BaseDomainClass} from '../../../common_classes/base_domain_class';
-import {IsBoolean, IsNotEmpty, IsOptional, IsString, MinLength, registerDecorator, ValidationArguments, ValidationOptions} from 'class-validator';
+import {IsBoolean, IsDate, IsNotEmpty, IsOptional, IsString, MinLength, registerDecorator, ValidationArguments, ValidationOptions} from 'class-validator';
 import MetatypeKey from './metatype_key';
 import * as t from 'io-ts';
 import Result from '../../../common_classes/result';
@@ -33,6 +33,15 @@ export default class Metatype extends BaseDomainClass {
     @IsNotEmpty()
     @IsString()
     description = '';
+
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    deleted_at?: Date;
+
+    @IsOptional()
+    @IsString()
+    ontology_version?: string;
 
     @Type(() => MetatypeKey)
     keys: MetatypeKey[] | undefined;
@@ -215,13 +224,17 @@ export default class Metatype extends BaseDomainClass {
                             }
 
                             if (key.validation.min !== undefined && key.validation.min > count) {
-                                errorStrings.push(`Validation of ${key.property_name} failed, this key is required. ` +
-                                    `${count} provided, less than min (${key.validation.min}).`);
+                                errorStrings.push(
+                                    `Validation of ${key.property_name} failed, this key is required. ` +
+                                        `${count} provided, less than min (${key.validation.min}).`,
+                                );
                             }
 
                             if (key.validation.max !== undefined && key.validation.max < count) {
-                                errorStrings.push(`Validation of ${key.property_name} failed, too many of this key provided. ` +
-                                    `${count} provided, more than max (${key.validation.max}).`);
+                                errorStrings.push(
+                                    `Validation of ${key.property_name} failed, too many of this key provided. ` +
+                                        `${count} provided, more than max (${key.validation.max}).`,
+                                );
                             }
                         }
 
@@ -239,7 +252,6 @@ export default class Metatype extends BaseDomainClass {
                 } else {
                     resolve(Result.Success(cts));
                 }
-
             };
         };
 
