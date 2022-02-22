@@ -1,5 +1,6 @@
 import {BaseDomainClass} from '../../../common_classes/base_domain_class';
-import {IsArray, IsBoolean, IsIn, IsNotEmpty, IsObject, IsOptional, IsString, Matches, MinLength} from 'class-validator';
+import {IsArray, IsBoolean, IsDate, IsIn, IsNotEmpty, IsObject, IsOptional, IsString, Matches, MinLength} from 'class-validator';
+import {Type} from 'class-transformer';
 
 /*
     MetatypeRelationshipKey represents a metatype relationship key record in the
@@ -13,6 +14,10 @@ export default class MetatypeRelationshipKey extends BaseDomainClass {
 
     @IsString()
     metatype_relationship_id?: string;
+
+    @IsString()
+    @IsOptional()
+    container_id?: string;
 
     @IsOptional()
     @IsBoolean()
@@ -54,8 +59,14 @@ export default class MetatypeRelationshipKey extends BaseDomainClass {
     @IsOptional()
     default_value?: string | boolean | number | any[];
 
+    @IsOptional()
+    @IsDate()
+    @Type(() => Date)
+    deleted_at?: Date;
+
     constructor(input: {
         metatype_relationship_id?: string;
+        container_id?: string;
         name: string;
         description: string;
         required: boolean;
@@ -81,6 +92,7 @@ export default class MetatypeRelationshipKey extends BaseDomainClass {
             if (input.options) this.options = input.options;
             if (input.validation) this.validation = input.validation;
             if (input.metatype_relationship_id) this.metatype_relationship_id = input.metatype_relationship_id;
+            if (input.container_id) this.container_id = input.container_id;
         }
     }
 }

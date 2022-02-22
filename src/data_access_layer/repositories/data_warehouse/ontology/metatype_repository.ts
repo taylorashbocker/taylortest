@@ -201,8 +201,9 @@ export default class MetatypeRepository extends Repository implements Repository
 
         if (m.keys)
             for (const key of m.keys) {
-                // set key's metatype_id to equal its parent
+                // set key's metatype_id and container_id to equal its parent
                 key.metatype_id = m.id;
+                key.container_id = m.container_id;
 
                 const errors = await key.validationErrors();
                 if (errors) {
@@ -258,6 +259,16 @@ export default class MetatypeRepository extends Repository implements Repository
             void this.deleteCached(m.id);
 
             return this.#mapper.Archive(m.id, user.id!);
+        }
+
+        return Promise.resolve(Result.Failure('metatype has no id'));
+    }
+
+    unarchive(user: User, m: Metatype): Promise<Result<boolean>> {
+        if (m.id) {
+            void this.deleteCached(m.id);
+
+            return this.#mapper.Unarchive(m.id, user.id!);
         }
 
         return Promise.resolve(Result.Failure('metatype has no id'));
@@ -328,6 +339,26 @@ export default class MetatypeRepository extends Repository implements Repository
 
     description(operator: string, value: any) {
         super.query('description', operator, value);
+        return this;
+    }
+
+    ontologyVersion(operator: string, value?: any) {
+        super.query('ontology_version', operator, value);
+        return this;
+    }
+
+    modified_at(operator: string, value?: any) {
+        super.query('modified_at', operator, value, 'date');
+        return this;
+    }
+
+    created_at(operator: string, value?: any) {
+        super.query('created_at', operator, value, 'date');
+        return this;
+    }
+
+    deleted_at(operator: string, value?: any) {
+        super.query('deleted_at', operator, value, 'date');
         return this;
     }
 

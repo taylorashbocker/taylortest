@@ -33,6 +33,7 @@ export type ContainerImportT = {
     description?: string | undefined;
     path?: string | undefined;
     data_versioning_enabled: boolean
+    ontology_versioning_enabled: boolean
 };
 
 /*
@@ -145,6 +146,7 @@ export default class ContainerImport {
                     input.name,
                     input.description || '',
                     input.data_versioning_enabled,
+                    input.ontology_versioning_enabled,
                     dryrun, update, containerID)
                     .then((result) => {
                         resolve(result);
@@ -169,6 +171,7 @@ export default class ContainerImport {
                     input.name,
                     input.description || '',
                     input.data_versioning_enabled,
+                    input.ontology_versioning_enabled,
                     dryrun, update, containerID));
             }).catch((e) => {
                 return Promise.reject(Result.Failure(e));
@@ -182,6 +185,7 @@ export default class ContainerImport {
         name: string,
         description: string,
         data_versioning_enabled: boolean,
+        ontology_versioning_enabled: boolean,
         dryrun: boolean,
         update: boolean,
         containerID: string,
@@ -429,7 +433,7 @@ export default class ContainerImport {
                     container = new Container({
                         name,
                         description: ontologyDescription,
-                        config: new ContainerConfig({data_versioning_enabled})
+                        config: new ContainerConfig({data_versioning_enabled, ontology_versioning_enabled})
                     });
 
                     const saved = await containerRepo.save(container, user);
@@ -748,6 +752,7 @@ export default class ContainerImport {
                             const propName = dataProp.name.split(' ').join('_');
                             const data = new MetatypeKey({
                                 metatype_id: thisClass.db_id,
+                                container_id: containerID,
                                 name: dataProp.name,
                                 required: false,
                                 property_name: stringToValidPropertyName(propName),

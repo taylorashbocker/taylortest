@@ -30,7 +30,7 @@
     },
     "devDependencies": {
         "@azure/storage-blob": "12.1.2",
-        "@types/bcrypt": "^3.0.0",
+        "@types/bcryptjs": "^2.4.2",
         "@types/busboy": "^0.2.3",
         "@types/chai": "^4.2.22",
         "@types/connect-pg-simple": "^4.2.2",
@@ -89,6 +89,7 @@
         "winston": "^3.3.3"
     },
     "dependencies": {
+        "@azure/service-bus": "^7.4.0",
         "@ladjs/graceful": "^1.0.5",
         "@types/amqplib": "^0.8.2",
         "@types/bree": "^6.2.1",
@@ -97,7 +98,7 @@
         "amqplib": "^0.8.0",
         "axios": "^0.21.1",
         "base64url": "^3.0.1",
-        "bcrypt": "^5.0.1",
+        "bcryptjs": "^2.4.3",
         "body-parser": "^1.19.0",
         "bree": "^7.1.2",
         "buffer": "^6.0.3",
@@ -112,6 +113,7 @@
         "csv": "^5.5.3",
         "csvtojson": "^2.0.10",
         "date-fns": "^2.28.0",
+        "dev-null": "^0.1.1",
         "digest-stream": "^2.0.0",
         "dot-prop": "^5.3.0",
         "express": "^4.17.1",
@@ -145,6 +147,7 @@
         "passport-local": "^1.0.0",
         "pg-connection-string": "^2.5.0",
         "pg-format": "^1.0.4",
+        "pg-large-object": "^2.0.0",
         "pg-query-stream": "^4.2.1",
         "reflect-metadata": "^0.1.13",
         "tslib": "^2.3.0",

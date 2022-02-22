@@ -201,8 +201,9 @@ export default class MetatypeRelationshipRepository extends Repository implement
 
         if (m.keys)
             for (const key of m.keys) {
-                // set key's metatype_id to equal its parent
+                // set key's metatype_id and container_id to equal its parent
                 key.metatype_relationship_id = m.id;
+                key.container_id = m.container_id;
 
                 const errors = await key.validationErrors();
                 if (errors) {
@@ -333,6 +334,11 @@ export default class MetatypeRelationshipRepository extends Repository implement
 
     description(operator: string, value: any) {
         super.query('description', operator, value);
+        return this;
+    }
+
+    ontologyVersion(operator: string, value?: any) {
+        super.query('ontology_version', operator, value);
         return this;
     }
 
