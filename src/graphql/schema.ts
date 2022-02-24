@@ -82,11 +82,15 @@ export default class GraphQLSchemaGenerator {
         });
 
         // checking for duplicates by adding to and checking array; not efficient. Perhaps try SET operator instead.
-        const metatypes: any[] = [];
+        // const metatypeList: any[] = [];
+        const metatypeSet = new Set<any>();
+
         metatypePairResults.value.forEach((pair) => {
             const metatype = pair.originMetatype!
-            if(!(metatypes.includes(metatype.name))){
-                metatypes.push(metatype.name);
+            // if(!(metatypeList.includes(metatype.name))){
+            //     metatypeList.push(metatype.name);
+            if(!(metatypeSet.has(metatype.name))){
+                metatypeSet.add(metatype.name)
                 metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
 
         // metatypeResults.value.forEach((metatype) => {
