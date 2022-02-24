@@ -145,7 +145,6 @@ import QueryBuilder from "../components/queryBuilder/queryBuilder.vue"
 import NodeFilesDialog from "@/components/nodeFilesDialog.vue";
 import {Component, Prop, Vue} from "vue-property-decorator";
 import {NodeT} from "@/api/types";
-import IfcViewer from "@/components/ifcViewer.vue";
 import ExportNode from "@/components/exportNode.vue"
 
 import {ResultSet} from "@/components/queryBuilder/queryBuilder.vue";
@@ -162,7 +161,7 @@ export default class DataQuery extends Vue {
   currentNodeInfo: any = null
   tab: any | null = null
   results: ResultSet | null = null
-  selectedProperties: any| null = null
+  selectedProperties: any | null = null
   expanded = []
 
   copy = mdiFileDocumentMultiple

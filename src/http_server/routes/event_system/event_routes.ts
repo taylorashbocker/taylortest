@@ -16,6 +16,8 @@ const statusRepo = new EventActionStatusRepository();
 // This contains all routes pertaining to Events
 export default class EventRoutes {
     public static mount(app: Application, middleware: any[]) {
+        app.post('/queue', ...middleware, authInContainer('write', 'data'), this.createQueueMessage)
+
         app.post('/events', ...middleware, authInContainer('write', 'data'), this.createEvent);
 
         app.post('/event_actions', ...middleware, authInContainer('write', 'data'), this.createEventAction);
@@ -200,5 +202,25 @@ export default class EventRoutes {
 
         Result.Failure(`event action status not found`, 404).asResponse(res);
         next();
+    }
+
+    // queue actions
+    private static createQueueMessage(req: Request, res: Response, next: NextFunction) {
+        const user = req.currentUser!;
+
+        const payload = plainToClass(EventAction, req.body as object);
+
+        actionRepo
+            .save(payload, user)
+            .then((result) => {
+                if (result.isError) {
+                    result.asResponse(res);
+                    return;
+                }
+
+                Result.Success(payload).asResponse(res);
+            })
+            .catch((err) => res.status(500).send(err))
+            .finally(() => next());
     }
 }

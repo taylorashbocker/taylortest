@@ -3,7 +3,7 @@
     <v-row>
       <v-col>
         <v-select
-            v-model="select"
+            v-model="nodeID"
             :items="adapterTypes()"
             @input="selectAdapter"
             :label="$t('exportNode.sourceType')"
@@ -11,7 +11,7 @@
         ></v-select>
       </v-col>
       <v-col>
-        <v-btn v-if="!icon" color="primary" dark class="mb-2" v-on="on">{{ $t('exportNode.exportNode') }}</v-btn>
+        <v-btn v-if="!icon" color="primary" dark class="mb-2" v-on="on" @click="exportNode()">{{ $t('exportNode.exportNode') }}</v-btn>
       </v-col>
     </v-row>
   </v-div>
@@ -20,11 +20,12 @@
 
 <script lang="ts">
 import {Component, Vue} from 'vue-property-decorator'
-
+import {AzureServiceBusQueue} from '../../../src/services/queue/azure_service_bus_queue_impl.ts'
 @Component
 export default class CreateNodeDialog extends Vue {
 
   errorMessage = ""
+  nodeID = "" 
   
   adapterTypes() {
     return [
@@ -33,7 +34,10 @@ export default class CreateNodeDialog extends Vue {
   }
 
   
-
+  exportNode() {
+    const queue = new AzureServiceBusQueue
+    queue.Put("jazz_event_test", `{"post": ${this.nodeID}`)
+  }
   // newNode() {
   //   this.setProperties()
   //   this.$client.createNode(this.containerID,
