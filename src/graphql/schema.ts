@@ -23,6 +23,7 @@ import {stringToValidPropertyName} from '../services/utilities';
 import NodeRepository from '../data_access_layer/repositories/data_warehouse/data/node_repository';
 import Logger from '../services/logger';
 import MetatypeRelationshipPairRepository from '../data_access_layer/repositories/data_warehouse/ontology/metatype_relationship_pair_repository';
+import EdgeRepository from '../data_access_layer/repositories/data_warehouse/data/edge_repository';
 
 // GraphQLSchemaGenerator takes a container and generates a valid GraphQL schema for all contained metatypes. This will
 // allow users to query and filter data based on node type, the various properties that type might have, and other bits
@@ -241,6 +242,9 @@ export default class GraphQLSchemaGenerator {
                 }
             }
 
+            // edge repo
+            let edgeRepo = new EdgeRepository();
+            
             // const start = new Date().getTime();
             if (input._relationship) {
                 const relationships = Object.keys(input._relationship);
