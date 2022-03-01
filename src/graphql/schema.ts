@@ -40,12 +40,46 @@ export default class GraphQLSchemaGenerator {
     // separated by containers
     async ForContainer(containerID: string): Promise<Result<GraphQLSchema>> {
         // fetch all metatypes for the container, with their keys - the single most expensive call of this function
-        // const metatypeResults = await this.#metatypeRepo.where().containerID('eq', containerID).list(true);
-        // if (metatypeResults.isError) return Promise.resolve(Result.Pass(metatypeResults));
+        const metatypeResults = await this.#metatypeRepo.where().containerID('eq', containerID).list(true);
+        if (metatypeResults.isError) return Promise.resolve(Result.Pass(metatypeResults));
 
         // fetch all metatype relationship pairs - alternate to MetatypeRepo.
-        const metatypePairResults = await this.#metatypePairRepo.where().containerID('eq', containerID).list(true);
+        const metatypePairResults = await this.#metatypePairRepo.where().containerID('eq', containerID).list();
         if (metatypePairResults.isError) return Promise.resolve(Result.Pass(metatypePairResults));
+
+        const destinationType = new GraphQLInputObjectType({
+            name: 'destinationInfo',
+            // needed because the return type accepts an object, but throws a fit about it
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            fields: () => {
+                const destinations: {[key: string]: {[key: string]: any}} = {};
+                metatypePairResults.value.forEach((pair) => {
+                    const dest = stringToValidPropertyName(pair.name.split(' : ')[2])
+                    if(!(dest in destinations)){
+                        destinations[dest] = {type: GraphQLBoolean}
+                    }
+                })
+                return destinations;
+            }
+        })
+
+        const relationshipInputType = new GraphQLInputObjectType({
+            name: 'relationship_input',
+            // needed because the return type accepts an object, but throws a fit about it
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+            // @ts-ignore
+            fields: () => {
+                const relationships: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
+                metatypePairResults.value.forEach((pair) => {
+                    const rel = stringToValidPropertyName(pair.name.split(' : ')[1])
+                    if(!(rel in relationships)){
+                        relationships[rel] = {type: new GraphQLList(destinationType)}
+                    }
+                })
+                return relationships;
+            }
+        })
 
         const metatypeGraphQLObjects: {[key: string]: any} = {};
 
@@ -81,28 +115,17 @@ export default class GraphQLSchemaGenerator {
             },
         });
 
-        // checking for duplicates by adding to and checking array; not efficient. Perhaps try SET operator instead.
-        // const metatypeList: any[] = [];
-        const metatypeSet = new Set<any>();
-
-        metatypePairResults.value.forEach((pair) => {
-            const metatype = pair.originMetatype!
-            // if(!(metatypeList.includes(metatype.name))){
-            //     metatypeList.push(metatype.name);
-            if(!(metatypeSet.has(metatype.name))){
-                metatypeSet.add(metatype.name)
-                metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
-
-        // metatypeResults.value.forEach((metatype) => {
-        //     metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
+        metatypeResults.value.forEach((metatype) => {
+            metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
                     args: {...this.inputFieldsForMetatype(metatype),
                     _record: {type: recordInputType},
-                    // _relationship: {type: relationshipInputType},
+                    _relationship: {type: relationshipInputType},
                 },
                     description: metatype.description,
                     type: new GraphQLList(
                         new GraphQLObjectType({
                             name: stringToValidPropertyName(metatype.name),
+                            // needed because the return type accepts an object, but throws a fit about it
                             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                             // @ts-ignore
                             fields: () => {
@@ -179,12 +202,8 @@ export default class GraphQLSchemaGenerator {
                         }),
                     ),
                     resolve: this.resolverForMetatype(containerID, metatype),
-            //     };
-            // });
-
-                }
-            };
-        });
+                };
+            });
 
         return Promise.resolve(
             Result.Success(
@@ -221,6 +240,25 @@ export default class GraphQLSchemaGenerator {
                     repo = repo.and().importDataID(query[0], query[1]);
                 }
             }
+
+            // const start = new Date().getTime();
+            if (input._relationship) {
+                const relationships = Object.keys(input._relationship);
+                relationships.forEach((rel) => {
+                    const destinations = Object.keys(input._relationship[rel][0]);
+                    rel = rel.replace('_',' ')
+                    console.log(rel)
+                    destinations.forEach((dest) => {
+                        console.log(dest)
+                        
+                        // const bool = input._relationship[rel][0][dest]
+                        // console.log(bool)
+                    })
+                })
+            }
+            // const end = new Date().getTime();
+            // const diff = (end - start) / 1000;
+            // console.log(diff);
 
             // we must map out what the graphql refers to a metatype's keys are vs. what they actually are so
             // that we can map the query properly
