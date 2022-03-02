@@ -99,7 +99,6 @@ export default class GraphRoutes {
 
     // This should return a node and all connected nodes and connecting edges for n layers.
     private static retrieveNthNodes(req: Request, res: Response, next: NextFunction) {
-        console.log(req);
         if (req.node) {
             let depth: any = '10';
             if (typeof req.query.depth !== 'undefined' && (req.query.depth as string) !== '') {

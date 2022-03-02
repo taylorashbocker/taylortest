@@ -41,12 +41,18 @@ export default class GraphQLSchemaGenerator {
     // separated by containers
     async ForContainer(containerID: string): Promise<Result<GraphQLSchema>> {
         // fetch all metatypes for the container, with their keys - the single most expensive call of this function
+        let start = new Date().getTime()
         const metatypeResults = await this.#metatypeRepo.where().containerID('eq', containerID).list(true);
         if (metatypeResults.isError) return Promise.resolve(Result.Pass(metatypeResults));
+        let end = new Date().getTime()
+        console.log("List Metatypes", (end-start))
 
+        start = new Date().getTime()
         // fetch all metatype relationship pairs - alternate to MetatypeRepo.
         const metatypePairResults = await this.#metatypePairRepo.where().containerID('eq', containerID).list();
         if (metatypePairResults.isError) return Promise.resolve(Result.Pass(metatypePairResults));
+        end = new Date().getTime()
+        console.log("List MT Pairs", (end-start))
 
         const destinationType = new GraphQLInputObjectType({
             name: 'destinationInfo',
@@ -243,26 +249,24 @@ export default class GraphQLSchemaGenerator {
             }
 
             // edge repo
-            let edgeRepo = new EdgeRepository();
-            
-            // const start = new Date().getTime();
+            const edgeRepo = new EdgeRepository();
+            let edgeResults: {[key: string]: any} = {};
             if (input._relationship) {
-                const relationships = Object.keys(input._relationship);
-                relationships.forEach((rel) => {
-                    const destinations = Object.keys(input._relationship[rel][0]);
-                    rel = rel.replace('_',' ')
-                    console.log(rel)
-                    destinations.forEach((dest) => {
-                        console.log(dest)
-                        
-                        // const bool = input._relationship[rel][0][dest]
-                        // console.log(bool)
-                    })
+                const relationship = Object.keys(input._relationship)[0];
+                const destination = Object.keys(input._relationship[relationship][0])[0]
+                let start = new Date().getTime()
+                edgeResults = await edgeRepo.findByRelationship(metatype.name, relationship, destination)
+                let end = new Date().getTime()
+                console.log("Edge query",(end - start))
+                const origin_ids: string[] = []
+                start = new Date().getTime()
+                edgeResults.value.forEach((edge: any) => {
+                    origin_ids.push(edge.origin_id)
                 })
+                repo = repo.and().id('in',origin_ids)
+                end = new Date().getTime()
+                console.log("Nodes from edges",(end - start))
             }
-            // const end = new Date().getTime();
-            // const diff = (end - start) / 1000;
-            // console.log(diff);
 
             // we must map out what the graphql refers to a metatype's keys are vs. what they actually are so
             // that we can map the query properly

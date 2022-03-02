@@ -49,14 +49,10 @@ export default class EdgeRepository extends Repository implements RepositoryInte
     }
 
     async findByRelationship(
-        origin: string, relationship: string, destination: string, transaction?: PoolClient): Promise<Result<Edge>> {
-            const edge = await this.#mapper.RetrieveByRelationship(origin, relationship, destination, transaction);
-            if (!edge.isError) {
-                const pair = await this.#pairRepo.findByID(edge.value.relationship_pair_id);
-                if (pair.isError) Logger.error(`unable to load node's metatype`);
-                else Object.assign(edge.value.metatypeRelationshipPair!, pair.value);
-            }
-            return Promise.resolve(edge);
+        origin: string, relationship: string, destination: string, transaction?: PoolClient): Promise<Result<Edge[]>> {
+            const edgeResults = await this.#mapper.RetrieveByRelationship(origin, relationship, destination, transaction);
+            if (edgeResults.isError) return Promise.resolve(Result.Pass(edgeResults));
+            return Promise.resolve(edgeResults);
         }
 
     async save(e: Edge, user: User, transaction?: PoolClient): Promise<Result<boolean>> {

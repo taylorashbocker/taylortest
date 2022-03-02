@@ -76,8 +76,8 @@ export default class EdgeMapper extends Mapper {
     }
 
     public RetrieveByRelationship(
-        origin: string, relationship: string, destination: string, transaction?: PoolClient): Promise<Result<Edge>> {
-            return super.retrieve<Edge>(this.retrieveByRelationshipStatement(origin, relationship, destination), {
+        origin: string, relationship: string, destination: string, transaction?: PoolClient): Promise<Result<Edge[]>> {
+            return super.rows<Edge>(this.retrieveByRelationshipStatement(origin, relationship, destination), {
                 transaction,
                 resultClass,
             });
