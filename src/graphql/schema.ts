@@ -54,39 +54,35 @@ export default class GraphQLSchemaGenerator {
         end = new Date().getTime()
         console.log("List MT Pairs", (end-start))
 
-        const destinationType = new GraphQLInputObjectType({
-            name: 'destinationInfo',
-            // needed because the return type accepts an object, but throws a fit about it
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            fields: () => {
-                const destinations: {[key: string]: {[key: string]: any}} = {};
-                metatypePairResults.value.forEach((pair) => {
-                    const dest = stringToValidPropertyName(pair.name.split(' : ')[2])
-                    if(!(dest in destinations)){
-                        destinations[dest] = {type: GraphQLBoolean}
-                    }
-                })
-                return destinations;
+        start = new Date().getTime()
+        const metatypePairList: {[key: string]: any} = {};
+        metatypePairResults.value.forEach((pair) => {
+            const origin = stringToValidPropertyName(pair.name.split(' : ')[0])
+            const rel = stringToValidPropertyName(pair.name.split(' : ')[1])
+            const dest = stringToValidPropertyName(pair.name.split(' : ')[2])
+            // populate list for forward searching
+            if(!(origin in metatypePairList)){
+                metatypePairList[origin] = {}
+            } 
+            if(!(rel in metatypePairList[origin])){
+                metatypePairList[origin][rel] = {}
+            }
+            if(!(dest in metatypePairList[origin][rel])){
+                metatypePairList[origin][rel][dest] = {type: GraphQLString}
+            }
+            // populate list for reverse searching
+            if(!(dest in metatypePairList)){
+                metatypePairList[dest] = {}
+            } 
+            if(!(rel in metatypePairList[dest])){
+                metatypePairList[dest][rel] = {}
+            }
+            if(!(origin in metatypePairList[dest][rel])){
+                metatypePairList[dest][rel][origin] = {type: GraphQLString}
             }
         })
-
-        const relationshipInputType = new GraphQLInputObjectType({
-            name: 'relationship_input',
-            // needed because the return type accepts an object, but throws a fit about it
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore
-            fields: () => {
-                const relationships: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
-                metatypePairResults.value.forEach((pair) => {
-                    const rel = stringToValidPropertyName(pair.name.split(' : ')[1])
-                    if(!(rel in relationships)){
-                        relationships[rel] = {type: new GraphQLList(destinationType)}
-                    }
-                })
-                return relationships;
-            }
-        })
+        end = new Date().getTime()
+        console.log("Pair List", (end - start))
 
         const metatypeGraphQLObjects: {[key: string]: any} = {};
 
@@ -123,6 +119,73 @@ export default class GraphQLSchemaGenerator {
         });
 
         metatypeResults.value.forEach((metatype) => {
+            const destinationInputType = new GraphQLInputObjectType({
+                name: `${metatype.name}_destination_input`,
+                // needed because the return type accepts an object, but throws a fit about it
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                fields: () => {
+                    const destinations: {[key: string]: {[key: string]: any}} = {};
+                    if(metatypePairList[metatype.name]){
+                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
+                            Object.keys(metatypePairList[metatype.name][pair]).forEach((dest) => {
+                                if(!(dest in destinations)){
+                                    destinations[dest] = {type: GraphQLBoolean}
+                                }
+                            })
+                        })
+                    }
+                    return destinations;
+                }
+            })
+
+            const relationshipInputType = new GraphQLInputObjectType({
+                name: `${metatype.name}_relationship_input`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                fields: () => {
+                    const relationships: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
+                    if(metatypePairList[metatype.name]){
+                        Object.keys(metatypePairList[metatype.name]).forEach((rel) => {
+                            relationships[rel] = {type: new GraphQLList(destinationInputType)}
+                        })
+                    }
+                    relationships['_reverse'] = {type: GraphQLBoolean}
+                    return relationships;
+                }
+            })
+
+            const destinationInfo = new GraphQLObjectType({
+                name: `${metatype.name}_destinationInfo`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                fields: () => {
+                    const fields: {[key: string]: any} = {};
+                    if(metatypePairList[metatype.name]){
+                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
+                            Object.keys(metatypePairList[metatype.name][pair]).forEach((dest) => {
+                                fields[dest] = {type: GraphQLString}
+                            })
+                        })
+                    }
+                    return fields
+                }
+            })
+
+            const relationshipInfo = new GraphQLObjectType({
+                name: `${metatype.name}_relationshipInfo`,
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-ignore
+                fields: () => {
+                    const fields: {[key: string]: any} = {};
+                    if(metatypePairList[metatype.name]){
+                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
+                            fields[pair] = {type: destinationInfo}
+                        })
+                    }
+                    return fields
+                }
+            })
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
                     args: {...this.inputFieldsForMetatype(metatype),
                     _record: {type: recordInputType},
@@ -138,7 +201,7 @@ export default class GraphQLSchemaGenerator {
                             fields: () => {
                                 const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
                                 output._record = {type: recordInfo};
-                                // output._relationship = {type: relationshipInfo};
+                                output._relationship = {type: relationshipInfo};
                                 
                                 metatype.keys?.forEach((metatypeKey) => {
                                     // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
@@ -211,7 +274,7 @@ export default class GraphQLSchemaGenerator {
                     resolve: this.resolverForMetatype(containerID, metatype),
                 };
             });
-
+        
         return Promise.resolve(
             Result.Success(
                 new GraphQLSchema({
@@ -248,24 +311,40 @@ export default class GraphQLSchemaGenerator {
                 }
             }
 
-            // edge repo
-            const edgeRepo = new EdgeRepository();
+            // variable to store results of edge DB call if _relationship input
             let edgeResults: {[key: string]: any} = {};
             if (input._relationship) {
+                const edgeRepo = new EdgeRepository();
+
+                // check input for the relationship type and destination metatype
                 const relationship = Object.keys(input._relationship)[0];
                 const destination = Object.keys(input._relationship[relationship][0])[0]
+
+                // these variables will change based on the value of the '_reverse' flag
+                let edgeArgs = [metatype.name, relationship.replace('_',' '), destination]
+                let check_id = 'origin_id'
+                if(input._relationship._reverse){
+                    edgeArgs = [destination, relationship.replace('_',' '), metatype.name]
+                    check_id = 'destination_id'
+                }
+                
+                // query to find all edges with specified relationship
                 let start = new Date().getTime()
-                edgeResults = await edgeRepo.findByRelationship(metatype.name, relationship, destination)
+                edgeResults = await edgeRepo.findByRelationship(edgeArgs[0],edgeArgs[1],edgeArgs[2])
+                if(edgeResults.value.length){
+                    // store nodes connected to this edge
+                    const edge_ids: string[] = []
+                    edgeResults.value.forEach((edge: any) => {
+                        edge_ids.push(edge[check_id])
+                    })
+                    // query these matching nodes
+                    repo = repo.and().id('in',edge_ids)
+                } else {
+                    // nothing is returned if no such relationships exist
+                    repo = repo.and().id('eq', 0)
+                }
                 let end = new Date().getTime()
                 console.log("Edge query",(end - start))
-                const origin_ids: string[] = []
-                start = new Date().getTime()
-                edgeResults.value.forEach((edge: any) => {
-                    origin_ids.push(edge.origin_id)
-                })
-                repo = repo.and().id('in',origin_ids)
-                end = new Date().getTime()
-                console.log("Nodes from edges",(end - start))
             }
 
             // we must map out what the graphql refers to a metatype's keys are vs. what they actually are so
@@ -307,6 +386,8 @@ export default class GraphQLSchemaGenerator {
 
                         const nodeOutput: {[key: string]: any}[] = [];
 
+                        console.log(input)
+
                         results.value.forEach((node) => {
                             const properties: {[key: string]: any} = {};
                             if (node.properties) {
@@ -317,7 +398,6 @@ export default class GraphQLSchemaGenerator {
                                 });
                             }
 
-                            const _relationship: {} = {};
                             // must return if relationship exists where node id matches and relationship name is relationship
 
                             nodeOutput.push({

@@ -220,6 +220,8 @@ export default class EdgeMapper extends Mapper {
             FROM current_edges e 
             JOIN metatype_relationship_pairs mpr 
             ON e.relationship_pair_id = mpr.id
+            JOIN nodes d
+            ON e.destination_id = d.id
             WHERE SPLIT_PART(mpr.name,' : ',1) = $1
             AND SPLIT_PART(mpr.name,' : ',2) = $2
             AND SPLIT_PART(mpr.name,' : ',3) = $3`,
