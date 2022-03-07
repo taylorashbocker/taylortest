@@ -35,6 +35,8 @@ export default class GraphRoutes {
 
         app.delete('/containers/:containerID/graphs/nodes/:nodeID', ...middleware, authInContainer('write', 'data'), this.deleteNode);
         app.delete('/containers/:containerID/graphs/edges/:edgeID', ...middleware, authInContainer('write', 'data'), this.archiveEdge);
+
+        // app.post('/queue', ...middleware, authInContainer('write', 'data'), this.createAzureQueueMessage);
     }
     private static listNodes(req: Request, res: Response, next: NextFunction) {
         // fresh instance of the repo to avoid filter issues
@@ -388,5 +390,19 @@ export default class GraphRoutes {
             Result.Failure(`edge or file not found`, 404).asResponse(res);
             next();
         }
+    }
+
+    // adapter queue actions
+    private static createAzureQueueMessage(req: Request, res: Response, next: NextFunction) {
+        // const queue = new RabbitMQQueue()
+        console.log("queue event succesfully triggered")
+        // var queueName: any = ''
+        // if (typeof req.body.queueName !== 'undefined' && (req.body.queueName as string) !== '') {
+        //     queueName = req.body.queueName
+        //     queue.Put(queueName, req.body.nodeID)
+        //     .catch((err) => res.status(500).send(err))
+        //     .finally(() => next());
+        // }
+        
     }
 }

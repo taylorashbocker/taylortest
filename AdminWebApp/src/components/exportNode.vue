@@ -3,15 +3,14 @@
     <v-row>
       <v-col>
         <v-select
-            v-model="nodeID"
+            v-model="adapterSelect"
             :items="adapterTypes()"
-            @input="selectAdapter"
             :label="$t('exportNode.sourceType')"
             required
         ></v-select>
       </v-col>
       <v-col>
-        <v-btn v-if="!icon" color="primary" dark class="mb-2" v-on="on" @click="exportNode()">{{ $t('exportNode.exportNode') }}</v-btn>
+        <v-btn color="primary" dark class="mb-2" @click="sendNode()">{{ $t('exportNode.exportNode') }}</v-btn>
       </v-col>
     </v-row>
   </v-div>
@@ -19,13 +18,15 @@
 
 
 <script lang="ts">
-import {Component, Vue} from 'vue-property-decorator'
-import {AzureServiceBusQueue} from '../../../src/services/queue/azure_service_bus_queue_impl.ts'
+import {Component, Prop, Vue} from 'vue-property-decorator'
 @Component
 export default class CreateNodeDialog extends Vue {
 
+  @Prop({required: true})
+  node!: any;
+
   errorMessage = ""
-  nodeID = "" 
+  adapterSelect = ""
   
   adapterTypes() {
     return [
@@ -34,9 +35,12 @@ export default class CreateNodeDialog extends Vue {
   }
 
   
-  exportNode() {
-    const queue = new AzureServiceBusQueue
-    queue.Put("jazz_event_test", `{"post": ${this.nodeID}`)
+  sendNode() {
+    this.$client.sendToQueue(this.adapterSelect, this.node.id)
+    .then(results => {
+          this.$emit('sentToQueue', results)
+        })
+        .catch(e => this.errorMessage = this.$t('createNode.errorCreatingAPI') as string + e)
   }
   // newNode() {
   //   this.setProperties()

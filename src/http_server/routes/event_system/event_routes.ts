@@ -8,6 +8,8 @@ import EventActionRepository from '../../../data_access_layer/repositories/event
 import EventActionStatusRepository from '../../../data_access_layer/repositories/event_system/event_action_status_repository';
 import EventAction from '../../../domain_objects/event_system/event_action';
 import EventActionStatus from '../../../domain_objects/event_system/event_action_status';
+import AzureServiceBusQueue from '../../../services/queue/azure_service_bus_queue_impl';
+import RabbitMQQueue from '../../../services/queue/rabbitmq_queue_impl';
 
 const eventRepo = new EventRepository();
 const actionRepo = new EventActionRepository();
@@ -16,8 +18,6 @@ const statusRepo = new EventActionStatusRepository();
 // This contains all routes pertaining to Events
 export default class EventRoutes {
     public static mount(app: Application, middleware: any[]) {
-        app.post('/queue', ...middleware, authInContainer('write', 'data'), this.createQueueMessage)
-
         app.post('/events', ...middleware, authInContainer('write', 'data'), this.createEvent);
 
         app.post('/event_actions', ...middleware, authInContainer('write', 'data'), this.createEventAction);
@@ -29,6 +29,8 @@ export default class EventRoutes {
         app.put('/event_action_status/:statusID', ...middleware, authInContainer('write', 'data'), this.updateEventActionStatus);
         app.get('/event_action_status', ...middleware, authInContainer('read', 'data'), this.listEventActionStatuses);
         app.get('/event_action_status/:statusID', ...middleware, authInContainer('read', 'data'), this.retrieveEventActionStatus);
+
+        app.post('/queue', ...middleware, authInContainer('write', 'data'), this.createAzureQueueMessage);
     }
 
     // events
@@ -204,23 +206,28 @@ export default class EventRoutes {
         next();
     }
 
-    // queue actions
-    private static createQueueMessage(req: Request, res: Response, next: NextFunction) {
-        const user = req.currentUser!;
-
-        const payload = plainToClass(EventAction, req.body as object);
-
-        actionRepo
-            .save(payload, user)
-            .then((result) => {
-                if (result.isError) {
-                    result.asResponse(res);
-                    return;
-                }
-
-                Result.Success(payload).asResponse(res);
-            })
-            .catch((err) => res.status(500).send(err))
-            .finally(() => next());
+    // adapter queue actions
+    private static createAzureQueueMessage(req: Request, res: Response, next: NextFunction) {
+        const queue: RabbitMQQueue = new RabbitMQQueue()
+        queue.Init()
+        .then((result) => {
+            if (result) {
+            var queueName: any = ''
+            if (typeof req.body.queueName !== 'undefined' && (req.body.queueName as string) !== '') {
+                queueName = req.body.queueName
+                queue.Put(queueName, req.body.nodeID)
+                .then((result) => {
+                    if (!result) {
+                        res.status(412).json(result);
+                        return;
+                    }
+                    res.status(200).json(result)
+                })
+                .catch((err) => res.status(500).send(err))
+                .finally(() => next());
+            }
+        }})
+        .catch((err) => res.status(500).send(err))
+        console.log(queue)  
     }
 }

@@ -570,6 +570,14 @@ export class Client {
         return this.get<number>(`/containers/${containerID}/graphs/edges`, query);
     }
 
+    sendToQueue(queueName: string, nodeID: string) {
+        const query: {[key: string]: any} = {};
+
+        query.queueName = queueName;
+        query.nodeID = nodeID;
+        return this.post(`/queue`, query);
+    }
+
     listImports(
         containerID: string,
         dataSourceID: string,

@@ -200,7 +200,7 @@ export class Config {
         this._data_sources_queue_name = process.env.DATA_SOURCES_QUEUE_NAME || 'data_sources';
         this._events_queue_name = process.env.EVENTS_QUEUE_NAME || 'events';
 
-        this._rabbitmq_url = process.env.RABBITMQ_URL || 'amqp://localhost:5672';
+        this._rabbitmq_url = process.env.RABBITMQ_URL || 'amqp://localhost';
         this._azure_service_bus_connection_string = process.env.AZURE_SERVICE_BUS_CONNECTION_STRING || 'sb://gvadeservicebus.servicebus.usgovcloudapi.net/;SharedAccessKeyName=dev_access;SharedAccessKey=2DyzFHMgkXxW4Leqkj8buxM2MOwaNv1axGQqvbFDKqs=';
     }
 
