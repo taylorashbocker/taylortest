@@ -76,7 +76,13 @@ export default class MetatypeKeyRoutes {
         // we don't have to do anything fancy here, simply return the metatype in
         // the request's keys
         if (req.metatype) {
-            Result.Success(req.metatype.keys).asResponse(res);
+            if (typeof req.query.deleted !== 'undefined' && String(req.query.deleted as string).toLowerCase() === 'false') {
+                Result.Success(req.metatype?.keys?.filter((key) => !key.deleted_at)).asResponse(res);
+                next();
+                return;
+            }
+
+            Result.Success(req.metatype?.keys).asResponse(res);
             next();
             return;
         }
@@ -113,6 +119,13 @@ export default class MetatypeKeyRoutes {
         if (req.metatypeKey) {
             if (req.query.permanent !== undefined && String(req.query.permanent).toLowerCase() === 'true') {
                 repo.delete(req.metatypeKey)
+                    .then((result) => {
+                        result.asResponse(res);
+                    })
+                    .catch((err) => res.status(500).send(err))
+                    .finally(() => next());
+            } else if (req.query.reverse !== undefined && String(req.query.reverse).toLowerCase() === 'true') {
+                repo.unarchive(req.currentUser!, req.metatypeKey)
                     .then((result) => {
                         result.asResponse(res);
                     })

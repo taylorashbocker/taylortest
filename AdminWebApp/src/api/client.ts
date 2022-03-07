@@ -24,6 +24,8 @@ import {
     OntologyVersionT,
     ChangelistT,
     ChangelistApprovalT,
+    ContainerAlertT,
+    TypeMappingUpgradePayloadT,
 } from '@/api/types';
 import {RetrieveJWT} from '@/auth/authentication_service';
 import {UserT} from '@/auth/types';
@@ -65,6 +67,14 @@ export class Client {
 
     retrieveContainer(containerID: string): Promise<ContainerT> {
         return this.get<ContainerT>(`/containers/${containerID}`);
+    }
+
+    listContainerAlerts(containerID: string): Promise<ContainerAlertT[]> {
+        return this.get<ContainerAlertT[]>(`/containers/${containerID}/alerts`);
+    }
+
+    acknowledgeContainerAlert(containerID: string, alertID: string): Promise<boolean> {
+        return this.postNoPayload(`/containers/${containerID}/alerts/${alertID}`);
     }
 
     createContainer(container: ContainerT | any): Promise<ContainerT[]> {
@@ -170,7 +180,7 @@ export class Client {
             loadKeys,
             createdAfter,
             modifiedAfter,
-            deleted,
+            deleted = false,
         }: {
             name?: string;
             nameIn?: string;
@@ -184,7 +194,7 @@ export class Client {
             loadKeys?: boolean;
             createdAfter?: string;
             modifiedAfter?: string;
-            deleted?: string;
+            deleted?: boolean;
         },
     ): Promise<MetatypeT[] | number> {
         const query: {[key: string]: any} = {};
@@ -201,7 +211,7 @@ export class Client {
         if (loadKeys) query.loadKeys = 'true';
         if (createdAfter) query.createdAfter = createdAfter;
         if (modifiedAfter) query.modifiedAfter = modifiedAfter;
-        if (deleted) query.deleted = deleted;
+        query.deleted = deleted;
 
         return this.get<MetatypeT[] | number>(`/containers/${containerID}/metatypes`, query);
     }
@@ -220,6 +230,7 @@ export class Client {
             sortBy,
             sortDesc,
             count,
+            deleted = false,
         }: {
             name?: string;
             description?: string;
@@ -232,6 +243,7 @@ export class Client {
             sortBy?: string;
             sortDesc?: boolean;
             count?: boolean;
+            deleted?: boolean;
         },
     ): Promise<MetatypeRelationshipPairT[] | number> {
         const query: {[key: string]: any} = {};
@@ -248,6 +260,7 @@ export class Client {
         if (sortBy) query.sortBy = sortBy;
         if (sortDesc) query.sortDesc = sortDesc;
         if (count) query.count = count;
+        query.deleted = deleted;
 
         return this.get<MetatypeRelationshipPairT[] | number>(`/containers/${containerID}/metatype_relationship_pairs`, query);
     }
@@ -272,17 +285,26 @@ export class Client {
         return this.delete(`/containers/${containerID}/metatypes/${metatypeID}`, query);
     }
 
-    listMetatypeKeys(containerID: string, metatypeID: string): Promise<MetatypeKeyT[]> {
-        return this.get<MetatypeKeyT[]>(`/containers/${containerID}/metatypes/${metatypeID}/keys`);
+    listMetatypeKeys(containerID: string, metatypeID: string, deleted = false): Promise<MetatypeKeyT[]> {
+        const query: {[key: string]: any} = {};
+        query.deleted = deleted;
+
+        return this.get<MetatypeKeyT[]>(`/containers/${containerID}/metatypes/${metatypeID}/keys`, query);
     }
 
     createMetatypeKey(containerID: string, metatypeID: string, key: MetatypeKeyT): Promise<MetatypeKeyT[]> {
         return this.post<MetatypeKeyT[]>(`/containers/${containerID}/metatypes/${metatypeID}/keys`, key);
     }
 
-    deleteMetatypeKey(containerID: string, metatypeID: string, keyID: string, {permanent}: {permanent?: boolean}): Promise<boolean> {
+    deleteMetatypeKey(
+        containerID: string,
+        metatypeID: string,
+        keyID: string,
+        {permanent, reverse}: {permanent?: boolean; reverse?: boolean},
+    ): Promise<boolean> {
         const query: {[key: string]: any} = {};
         if (permanent) query.permanent = permanent;
+        if (reverse) query.reverse = reverse;
 
         return this.delete(`/containers/${containerID}/metatypes/${metatypeID}/keys/${keyID}`, query);
     }
@@ -314,6 +336,7 @@ export class Client {
             sortBy,
             sortDesc,
             count,
+            deleted = false,
         }: {
             name?: string;
             description?: string;
@@ -323,6 +346,7 @@ export class Client {
             sortBy?: string;
             sortDesc?: boolean;
             count?: boolean;
+            deleted?: boolean;
         },
     ): Promise<MetatypeRelationshipT[] | number> {
         const query: {[key: string]: any} = {};
@@ -335,6 +359,7 @@ export class Client {
         if (sortBy) query.sortBy = sortBy;
         if (sortDesc) query.sortDesc = sortDesc;
         if (count) query.count = 'true';
+        query.deleted = deleted;
 
         return this.get<MetatypeRelationshipT[] | number>(`/containers/${containerID}/metatype_relationships`, query);
     }
@@ -377,8 +402,11 @@ export class Client {
         return this.delete(`/containers/${containerID}/metatype_relationship_pairs/${metatypeRelationshipPairID}`, query);
     }
 
-    listMetatypeRelationshipKeys(containerID: string, relationshipID: string): Promise<MetatypeRelationshipKeyT[]> {
-        return this.get<MetatypeRelationshipKeyT[]>(`/containers/${containerID}/metatype_relationships/${relationshipID}/keys`);
+    listMetatypeRelationshipKeys(containerID: string, relationshipID: string, deleted = false): Promise<MetatypeRelationshipKeyT[]> {
+        const query: {[key: string]: any} = {};
+        query.deleted = deleted;
+
+        return this.get<MetatypeRelationshipKeyT[]>(`/containers/${containerID}/metatype_relationships/${relationshipID}/keys`, query);
     }
 
     deleteMetatypeRelationshipKey(containerID: string, metatypeRelationshipID: string, keyID: string, {permanent}: {permanent?: boolean}): Promise<boolean> {
@@ -425,17 +453,25 @@ export class Client {
         );
     }
 
+    upgradeTypeMappings(containerID: string, dataSourceID: string, payload: TypeMappingUpgradePayloadT): Promise<ResultT<boolean>[]> {
+        return this.postRawReturn<ResultT<boolean>[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/mappings/upgrade`, payload);
+    }
+
     dataSourceJSONFileImport(containerID: string, dataSourceID: string, file: File): Promise<boolean> {
         return this.postFile(`/containers/${containerID}/import/datasources/${dataSourceID}/imports`, 'import', file);
     }
 
     async uploadFile(containerID: string, dataSourceID: string, file: File): Promise<FileT> {
-        const results = await this.postFileRawReturn<ResultT[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/files`, 'import', file);
+        const results = await this.postFileRawReturn<ResultT<ResultT<FileT>[]>>(
+            `/containers/${containerID}/import/datasources/${dataSourceID}/files`,
+            'import',
+            file,
+        );
 
         return new Promise((resolve, reject) => {
-            if (results[0].isError) reject(results[0].error);
+            if (results.value[0].isError) reject(results.value[0].error);
 
-            resolve(new Promise((r) => r(results[0].value as FileT)));
+            resolve(new Promise((r) => r(results.value[0].value as FileT)));
         });
     }
 
@@ -700,15 +736,15 @@ export class Client {
 
     // only use this function when exporting type mappings from one data source to another WITHIN THE SAME DL INSTANCE
     // this will not work for exporting to a separate instance of Deep Lynx
-    exportTypeMappings(containerID: string, dataSourceID: string, targetDataSource: string, ...typeMappings: TypeMappingT[]): Promise<ResultT[]> {
-        return this.postRawReturn<ResultT[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/mappings/export`, {
+    exportTypeMappings(containerID: string, dataSourceID: string, targetDataSource: string, ...typeMappings: TypeMappingT[]): Promise<ResultT<any>[]> {
+        return this.postRawReturn<ResultT<any>[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/mappings/export`, {
             mapping_ids: typeMappings.map((mapping) => mapping.id),
             target_data_source: targetDataSource,
         });
     }
 
-    importTypeMappings(containerID: string, dataSourceID: string, file: File): Promise<ResultT[]> {
-        return this.postFileRawReturn<ResultT[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/mappings/import`, 'mappings', file);
+    importTypeMappings(containerID: string, dataSourceID: string, file: File): Promise<ResultT<any>[]> {
+        return this.postFileRawReturn<ResultT<any>[]>(`/containers/${containerID}/import/datasources/${dataSourceID}/mappings/import`, 'mappings', file);
     }
 
     retrieveTransformations(containerID: string, dataSourceID: string, typeMappingID: string): Promise<TypeMappingTransformationT[]> {

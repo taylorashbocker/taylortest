@@ -74,6 +74,10 @@ export default {
             ontologyVersioning: 'Ontology Versioning',
             ontologyVersioningDescription: 'Manage Version and Changelists',
         },
+        containerAlert: {
+            acknowledge: 'Acknowledge Alert',
+            containerAdminAcknowledge: 'Only Container Administrators can dismiss alerts. Please contact your administrator to remove this alert.',
+        },
         apiKeys: {
             title: 'Current API Keys',
             key: 'Key',
@@ -114,6 +118,10 @@ export default {
             selectFile: 'Select File to Upload',
         },
         ifcViewer: {
+            rawProperties: 'Raw Properties',
+            name: 'Name',
+            close: 'Close',
+            description: 'Description',
             loadWarning:
                 'Loading an IFC file into the browser can be a resource and time consuming process. If the file is large, or your connection to Deep Lynx slow, it may take several minutes for the file to load and render. Please be patient.',
             loadModel: 'Load IFC File',
@@ -546,6 +554,9 @@ export default {
                 'Data may have already been generated using this Transformation. We will remove this data by default so as to avoid "orphaned" data, or data that we cannot trace back to an individual Transformation. If you would like to keep this data and orphan it, please uncheck the box below.',
         },
         dataMapping: {
+            deprecated: 'Deprecated Transformation',
+            deprecatedTooltip:
+                "These refer to transformations who's types and keys no longer use the current ontology versions. Any data resulting from these transformations will refer to a previous ontology version and not the current. Consider updating them",
             parentInformation: 'Parent Information',
             childInformation: 'Child Information',
             dataSourceRelationshipHelp: 'Choose the Data Source the parent and child record belong to.',

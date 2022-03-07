@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-for-in-array */
-import RepositoryInterface, { DeleteOptions, Repository } from "../../repository";
+import RepositoryInterface, {DeleteOptions, QueryOptions, Repository} from "../../repository";
 import TypeTransformation from '../../../../domain_objects/data_warehouse/etl/type_transformation';
 import Result from '../../../../common_classes/result';
 import {User} from '../../../../domain_objects/access_management/user';
@@ -18,8 +18,8 @@ import MetatypeRepository from '../ontology/metatype_repository';
 import MetatypeRelationshipPairRepository from '../ontology/metatype_relationship_pair_repository';
 import MetatypeRelationshipPair from '../../../../domain_objects/data_warehouse/ontology/metatype_relationship_pair';
 import Metatype from '../../../../domain_objects/data_warehouse/ontology/metatype';
-import NodeRepository from "../data/node_repository";
-import EdgeRepository from "../data/edge_repository";
+import OntologyVersionRepository from "../ontology/versioning/ontology_version_repository";
+import {PoolClient} from "pg";
 
 /*
     TypeTransformationRepository contains methods for persisting and retrieving
@@ -141,9 +141,6 @@ export default class TypeTransformationRepository extends Repository implements 
         return Promise.resolve(Result.Success(true));
     }
 
-    constructor() {
-        super(TypeTransformationMapper.tableName);
-    }
 
     // this method will iterate through all key mappings on this transformation and populate their names
     // generally this method is only used when we need to export mapping/transformations into a separate
@@ -192,14 +189,24 @@ export default class TypeTransformationRepository extends Repository implements 
         // much faster to loop through some in-memory classes than it is to make a very large amount of database transactions
         // especially when you consider this is generally called as part of a very large export of mappings and this function
         // has to be run for each mapping in the export
-        const metatypeRepo = new MetatypeRepository();
-        const relationshipPairRepo = new MetatypeRelationshipPairRepository();
+        let metatypeRepo = new MetatypeRepository();
+        let relationshipPairRepo = new MetatypeRelationshipPairRepository();
+        // we must get the latest ontology version so we're importing the mappings to the correct ontology version
+        const ontologyRepository = new OntologyVersionRepository()
+        let ontologyVersion: string | undefined
 
         const metatypeNames: string[] = [];
         const relationshipPairNames: string[] = [];
 
         let metatypes: Metatype[] = [];
         let relationshipPairs: MetatypeRelationshipPair[] = [];
+
+        const ontResults = await ontologyRepository.where().containerID('eq', containerID).and().status('eq', 'published').list({sortBy: 'id', sortDesc: true})
+        if(ontResults.isError || ontResults.value.length === 0) {
+            Logger.error('unable to fetch current ontology, or no currently published ontology')
+        } else {
+            ontologyVersion = ontResults.value[0].id
+        }
 
         for (const transformation of transformations) {
             if (transformation.metatype_name && !transformation.metatype_id) metatypeNames.push(transformation.metatype_name);
@@ -210,16 +217,34 @@ export default class TypeTransformationRepository extends Repository implements 
         // fetch all metatypes and relationship pairs by name specified, this allows us to minimize DB calls, though it
         // means we will be looping through the data again further down
         if (metatypeNames.length > 0) {
-            const results = await metatypeRepo.where().containerID('eq', containerID).and().name('in', metatypeNames).list();
+            metatypeRepo = metatypeRepo.where()
+                .containerID('eq', containerID)
+                .and().name('in', metatypeNames)
+
+            if(ontologyVersion) {
+                metatypeRepo = metatypeRepo.and().ontologyVersion('eq', ontologyVersion)
+            } else {
+                metatypeRepo = metatypeRepo.and().ontologyVersion('is null')
+            }
+
+            const results = await metatypeRepo.list();
 
             if (results.isError) Logger.error(`unable to fetch metatypes for set of transformations on backfill ${results.error?.error}`);
             else metatypes = results.value;
         }
 
         if (relationshipPairNames.length > 0) {
-            const results = await relationshipPairRepo.where()
-                .containerID('eq', containerID).and()
-                .name('in', relationshipPairNames).list(true); // we want the relationships so we can easily grab the relationship keys
+            relationshipPairRepo = relationshipPairRepo.where()
+                .containerID('eq', containerID)
+                .and().name('in', relationshipPairNames)
+
+            if(ontologyVersion) {
+                relationshipPairRepo = relationshipPairRepo.and().ontologyVersion('eq', ontologyVersion)
+            } else {
+                relationshipPairRepo = relationshipPairRepo.and().ontologyVersion('is null')
+            }
+
+            const results = await relationshipPairRepo.list(true)
 
             if (results.isError) Logger.error(`unable to fetch relationship pairs for set of transformations on backfill ${results.error?.error}`);
             else relationshipPairs = results.value;
@@ -252,6 +277,10 @@ export default class TypeTransformationRepository extends Repository implements 
 
                 if (foundPair) {
                     transformations[i].metatype_relationship_pair_id = foundPair.id;
+                    transformations[i].origin_metatype_id = foundPair.origin_metatype_id
+                    transformations[i].destination_metatype_id = foundPair.destination_metatype_id
+                    transformations[i].origin_data_source_id = undefined
+                    transformations[i].destination_data_source_id = undefined
 
                     // now set the id's of all the keys
                     for (const j in transformations[i].keys) {
@@ -301,5 +330,58 @@ export default class TypeTransformationRepository extends Repository implements 
         if (!deleted) Logger.error(`unable to remove type mapping ${t.id} from cache`);
 
         return Promise.resolve(deleted);
+    }
+
+    constructor() {
+        super(TypeTransformationMapper.tableName);
+        this._rawQuery = [
+            `SELECT type_mapping_transformations.*,
+                         metatypes.name as metatype_name,
+                         metatype_relationship_pairs.name as metatype_relationship_pair_name,
+                         metatypes.ontology_version as metatype_ontology_version,
+                         metatype_relationship_pairs.ontology_version as metatype_relationship_pair_ontology_version,
+                         mapping.container_id AS container_id,
+                         mapping.shape_hash as shape_hash,
+                         mapping.data_source_id as data_source_id
+                  FROM ${TypeTransformationMapper.tableName}`,
+            `LEFT JOIN type_mappings as mapping ON type_mapping_transformations.type_mapping_id = mapping.id`,
+            `LEFT JOIN metatypes ON type_mapping_transformations.metatype_id = metatypes.id`,
+            `LEFT JOIN metatype_relationship_pairs 
+                               ON type_mapping_transformations.metatype_relationship_pair_id = metatype_relationship_pairs.id`
+        ]
+    }
+
+    typeMappingID(operator: string, value: any) {
+        super.query('type_mapping_id', operator, value)
+        return this;
+    }
+
+    async count(): Promise<Result<number>> {
+        return super.count()
+    }
+
+    async list(options?: QueryOptions, transaction?: PoolClient): Promise<Result<TypeTransformation[]>> {
+        const results = await super.findAll<TypeTransformation>(options, {
+            transaction,
+            resultClass: TypeTransformation
+        })
+
+        this._rawQuery = [
+            `SELECT type_mapping_transformations.*,
+                         metatypes.name as metatype_name,
+                         metatype_relationship_pairs.name as metatype_relationship_pair_name,
+                         metatypes.ontology_version as metatype_ontology_version,
+                         metatype_relationship_pairs.ontology_version as metatype_relationship_pair_ontology_version,
+                         mapping.container_id AS container_id,
+                         mapping.shape_hash as shape_hash,
+                         mapping.data_source_id as data_source_id
+                  FROM ${TypeTransformationMapper.tableName}`,
+            `LEFT JOIN type_mappings as mapping ON type_mapping_transformations.type_mapping_id = mapping.id`,
+            `LEFT JOIN metatypes ON type_mapping_transformations.metatype_id = metatypes.id`,
+            `LEFT JOIN metatype_relationship_pairs 
+                               ON type_mapping_transformations.metatype_relationship_pair_id = metatype_relationship_pairs.id`
+        ]
+
+        return Promise.resolve(results)
     }
 }

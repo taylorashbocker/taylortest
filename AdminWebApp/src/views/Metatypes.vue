@@ -127,7 +127,6 @@ import {mdiFileDocumentMultiple} from "@mdi/js";
 import OntologyVersionToolbar from "@/components/ontology/ontologyVersionToolbar.vue";
 import ViewMetatypeDialog from "@/components/viewMetatypeDialog.vue";
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const Diff = require('diff');
 const diff = require('deep-diff').diff;
 
 @Component({components: {
@@ -221,6 +220,7 @@ export default class Metatypes extends Vue {
       sortDesc: sortDescParam,
       name: (this.name !== "") ? this.name : undefined,
       description: (this.description !== "") ? this.description : undefined,
+      deleted: this.$store.getters.isEditMode
     })
         .then((results) => {
           if(!this.$store.getters.isEditMode) {
@@ -282,8 +282,7 @@ export default class Metatypes extends Vue {
   // compareMetatypes takes two metatypes and returns whether they are identical
   // this is used to indicate when a metatype has been edited as part of the new ontology
   compareMetatypes(original: MetatypeT, target: MetatypeT): boolean {
-    if(typeof  original === 'undefined') return true
-    if(typeof  target === 'undefined') return true
+    if(typeof  original === 'undefined' || typeof target === 'undefined') return true
     // first copy the objects over so that our key deletion does not affect the real object, since we can't compare
     // ids and metadata we need to get rid of those on each object
     const o = {}
