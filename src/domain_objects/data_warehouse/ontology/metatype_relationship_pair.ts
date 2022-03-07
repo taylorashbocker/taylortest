@@ -28,6 +28,7 @@ export default class MetatypeRelationshipPair extends BaseDomainClass {
     name = '';
 
     @IsNotEmpty()
+    @IsString()
     description = '';
 
     // in order to support the data structure we need additional transformation

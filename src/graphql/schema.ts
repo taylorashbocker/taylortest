@@ -267,6 +267,7 @@ export default class GraphQLSchemaGenerator {
                                         }
                                     }
                                 });
+                                
                                 return output;
                             },
                         }),
@@ -386,8 +387,6 @@ export default class GraphQLSchemaGenerator {
 
                         const nodeOutput: {[key: string]: any}[] = [];
 
-                        console.log(input)
-
                         results.value.forEach((node) => {
                             const properties: {[key: string]: any} = {};
                             if (node.properties) {
@@ -398,7 +397,7 @@ export default class GraphQLSchemaGenerator {
                                 });
                             }
 
-                            // must return if relationship exists where node id matches and relationship name is relationship
+                            // what needs to be returned here?
 
                             nodeOutput.push({
                                 ...properties,
