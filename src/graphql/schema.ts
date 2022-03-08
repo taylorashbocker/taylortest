@@ -184,101 +184,116 @@ export default class GraphQLSchemaGenerator {
                     return fields
                 }
             })
+
             metatypeGraphQLObjects[stringToValidPropertyName(metatype.name)] = {
-                    args: {...this.inputFieldsForMetatype(metatype),
+                args: {
+                    ...this.inputFieldsForMetatype(metatype),
                     _record: {type: recordInputType},
                     _relationship: {type: relationshipInputType},
                 },
-                    description: metatype.description,
-                    type: new GraphQLList(
-                        new GraphQLObjectType({
-                            name: stringToValidPropertyName(metatype.name),
-                            // needed because the return type accepts an object, but throws a fit about it
-                            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-                            // @ts-ignore
-                            fields: () => {
-                                const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
-                                output._record = {type: recordInfo};
-                                output._relationship = {type: relationshipInfo};
-                                
-                                metatype.keys?.forEach((metatypeKey) => {
-                                    // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
-                                    // valid graphql property names. While we force the user to meet these requirements at key
-                                    // creation, we can't guarantee that legacy data will conform to these standards
-                                    const propertyName = stringToValidPropertyName(metatypeKey.property_name);
+                description: metatype.description,
+                type: new GraphQLList(
+                    new GraphQLObjectType({
+                        name: stringToValidPropertyName(metatype.name),
+                        // needed because the return type accepts an object, but throws a fit about it
+                        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                        // @ts-ignore
+                        fields: () => {
+                            const output: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
+                            output._record = {type: recordInfo};
+                            output._relationship = {type: relationshipInfo};
+                            metatype.keys?.forEach((metatypeKey) => {
+                                // keys must match the regex format of /^[_a-zA-Z][_a-zA-Z0-9]*$/ in order to be considered
+                                // valid graphql property names. While we force the user to meet these requirements at key
+                                // creation, we can't guarantee that legacy data will conform to these standards
+                                const propertyName = stringToValidPropertyName(metatypeKey.property_name);
 
-                                    switch (metatypeKey.data_type) {
-                                        // because we have no specification on our internal number type, we
-                                        // must set this as a float for now
-                                        case 'number': {
-                                            output[propertyName] = {
-                                                type: GraphQLFloat,
-                                            };
-                                            break;
-                                        }
-
-                                        case 'boolean': {
-                                            output[propertyName] = {
-                                                type: GraphQLBoolean,
-                                            };
-                                            break;
-                                        }
-
-                                        case 'string' || 'date' || 'file': {
-                                            output[propertyName] = {
-                                                type: GraphQLString,
-                                            };
-                                            break;
-                                        }
-
-                                        case 'list': {
-                                            output[propertyName] = {
-                                                type: new GraphQLList(GraphQLJSON),
-                                            };
-                                            break;
-                                        }
-
-                                        case 'enumeration': {
-                                            const enumMap: {[key: string]: GraphQLEnumValueConfig} = {};
-
-                                            if (metatypeKey.options) {
-                                                metatypeKey.options.forEach((option) => {
-                                                    enumMap[option] = {
-                                                        value: option,
-                                                    };
-                                                });
-                                            }
-
-                                            output[propertyName] = {
-                                                type: new GraphQLEnumType({
-                                                    name: stringToValidPropertyName(`${metatype.name}_${metatypeKey.name}_Enum_TypeA`),
-                                                    values: enumMap,
-                                                }),
-                                            };
-                                            break;
-                                        }
-
-                                        default: {
-                                            output[propertyName] = {
-                                                type: GraphQLString,
-                                            };
-                                        }
+                                switch (metatypeKey.data_type) {
+                                    // because we have no specification on our internal number type, we
+                                    // must set this as a float for now
+                                    case 'number': {
+                                        output[propertyName] = {
+                                            type: GraphQLFloat,
+                                        };
+                                        break;
                                     }
-                                });
-                                
-                                return output;
-                            },
-                        }),
-                    ),
-                    resolve: this.resolverForMetatype(containerID, metatype),
-                };
-            });
+
+                                    case 'boolean': {
+                                        output[propertyName] = {
+                                            type: GraphQLBoolean,
+                                        };
+                                        break;
+                                    }
+
+                                    case 'string' || 'date' || 'file': {
+                                        output[propertyName] = {
+                                            type: GraphQLString,
+                                        };
+                                        break;
+                                    }
+
+                                    case 'list': {
+                                        output[propertyName] = {
+                                            type: new GraphQLList(GraphQLJSON),
+                                        };
+                                        break;
+                                    }
+
+                                    case 'enumeration': {
+                                        const enumMap: {[key: string]: GraphQLEnumValueConfig} = {};
+
+                                        if (metatypeKey.options) {
+                                            metatypeKey.options.forEach((option) => {
+                                                enumMap[option] = {
+                                                    value: option,
+                                                };
+                                            });
+                                        }
+
+                                        output[propertyName] = {
+                                            type: new GraphQLEnumType({
+                                                name: stringToValidPropertyName(`${metatype.name}_${metatypeKey.name}_Enum_TypeA`),
+                                                values: enumMap,
+                                            }),
+                                        };
+                                        break;
+                                    }
+
+                                    default: {
+                                        output[propertyName] = {
+                                            type: GraphQLString,
+                                        };
+                                    }
+                                }
+                            });
+                            
+                            return output;
+                        },
+                    }),
+                ),
+                resolve: this.resolverForMetatype(containerID, metatype),
+            };
+        });
+
+        const metatypeObjects = new GraphQLObjectType({
+            name: 'metatypes',
+            fields: metatypeGraphQLObjects
+        })
+
+        const test = new GraphQLObjectType({
+            name: 'test',
+            fields: {id: {type: GraphQLString}}
+        })
         
         return Promise.resolve(
             Result.Success(
                 new GraphQLSchema({
                     query: new GraphQLObjectType({
                         name: 'Query',
+                        // fields: {
+                        //     metatypes: {type: metatypeObjects},
+                        //     relationships: {type: test},
+                        // }
                         fields: metatypeGraphQLObjects,
                     }),
                 }),
