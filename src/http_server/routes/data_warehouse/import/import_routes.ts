@@ -210,6 +210,7 @@ export default class ImportRoutes {
     // createManualImport will accept either a file or a raw JSON body
     private static createManualImport(req: Request, res: Response, next: NextFunction) {
         if (req.dataSource) {
+            const mimeTypes: string[] = ['application/json','text/csv', 'text/xml', 'application/xml'];
             if (req.headers['content-type']?.includes('application/json')) {
                 req.dataSource
                     .ReceiveData(req, req.currentUser!)
@@ -219,7 +220,7 @@ export default class ImportRoutes {
                     .catch((err) => res.status(404).send(err))
                     .finally(() => next());
                 // @ts-ignore
-            } else {
+            } else if (req.headers.includes(mimeTypes.any)) {
                 const busboy = new Busboy({headers: req.headers});
                 const importPromises: Promise<Result<Import | DataStaging[]>>[] = [];
 
@@ -273,6 +274,9 @@ export default class ImportRoutes {
                 });
 
                 return req.pipe(busboy);
+            } else {
+              Result.Failure(`MIME type of ${mimetype} is not supported for file import`, 404).asResponse(res);
+              next();
             }
         } else {
             Result.Failure(`unable to find data source`, 404).asResponse(res);
