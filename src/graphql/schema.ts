@@ -24,6 +24,7 @@ import NodeRepository from '../data_access_layer/repositories/data_warehouse/dat
 import Logger from '../services/logger';
 import MetatypeRelationshipPairRepository from '../data_access_layer/repositories/data_warehouse/ontology/metatype_relationship_pair_repository';
 import EdgeRepository from '../data_access_layer/repositories/data_warehouse/data/edge_repository';
+import MetatypeRelationshipRepository from '../data_access_layer/repositories/data_warehouse/ontology/metatype_relationship_repository';
 
 // GraphQLSchemaGenerator takes a container and generates a valid GraphQL schema for all contained metatypes. This will
 // allow users to query and filter data based on node type, the various properties that type might have, and other bits
@@ -31,10 +32,12 @@ import EdgeRepository from '../data_access_layer/repositories/data_warehouse/dat
 export default class GraphQLSchemaGenerator {
     #metatypeRepo: MetatypeRepository;
     #metatypePairRepo: MetatypeRelationshipPairRepository;
+    #relationshipRepo: MetatypeRelationshipRepository;
 
     constructor() {
         this.#metatypeRepo = new MetatypeRepository();
         this.#metatypePairRepo = new MetatypeRelationshipPairRepository();
+        this.#relationshipRepo = new MetatypeRelationshipRepository();
     }
 
     // generate requires a containerID because the schema it generates is based on a user's ontology and ontologies are
@@ -55,30 +58,54 @@ export default class GraphQLSchemaGenerator {
         console.log("List MT Pairs", (end-start))
 
         start = new Date().getTime()
-        const metatypePairList: {[key: string]: any} = {};
+        // fetch all relationship types.
+        const relationshipResults = await this.#relationshipRepo.where().containerID('eq', containerID).list(true);
+        if (metatypePairResults.isError) return Promise.resolve(Result.Pass(metatypePairResults));
+        end = new Date().getTime()
+        console.log("List Relationships", (end-start))
+
+        // figure out which properties should be in the input/object types
+
+        const relationshipGraphQLObjects: {[key: string]: any} = {};
+
+        relationshipResults.value.forEach((relationship) => {
+            relationshipGraphQLObjects[stringToValidPropertyName(relationship.name)] = {
+                // args will include input object and input fields function
+                description: relationship.description,
+                // type will be a GraphQLList of GraphQLObjects
+                    // name: relationship name
+                    // fields:
+                        // output._record
+                        // relationship keys?
+                // resolver for relationship
+            }
+        })
+
+        start = new Date().getTime()
+        const metatypePairObject: {[key: string]: any} = {};
         metatypePairResults.value.forEach((pair) => {
             const origin = stringToValidPropertyName(pair.name.split(' : ')[0])
             const rel = stringToValidPropertyName(pair.name.split(' : ')[1])
             const dest = stringToValidPropertyName(pair.name.split(' : ')[2])
             // populate list for forward searching
-            if(!(origin in metatypePairList)){
-                metatypePairList[origin] = {}
+            if(!(origin in metatypePairObject)){
+                metatypePairObject[origin] = {}
             } 
-            if(!(rel in metatypePairList[origin])){
-                metatypePairList[origin][rel] = {}
+            if(!(rel in metatypePairObject[origin])){
+                metatypePairObject[origin][rel] = {}
             }
-            if(!(dest in metatypePairList[origin][rel])){
-                metatypePairList[origin][rel][dest] = {type: GraphQLString}
+            if(!(dest in metatypePairObject[origin][rel])){
+                metatypePairObject[origin][rel][dest] = {type: GraphQLString}
             }
             // populate list for reverse searching
-            if(!(dest in metatypePairList)){
-                metatypePairList[dest] = {}
+            if(!(dest in metatypePairObject)){
+                metatypePairObject[dest] = {}
             } 
-            if(!(rel in metatypePairList[dest])){
-                metatypePairList[dest][rel] = {}
+            if(!(rel in metatypePairObject[dest])){
+                metatypePairObject[dest][rel] = {}
             }
-            if(!(origin in metatypePairList[dest][rel])){
-                metatypePairList[dest][rel][origin] = {type: GraphQLString}
+            if(!(origin in metatypePairObject[dest][rel])){
+                metatypePairObject[dest][rel][origin] = {type: GraphQLString}
             }
         })
         end = new Date().getTime()
@@ -127,9 +154,9 @@ export default class GraphQLSchemaGenerator {
                 // @ts-ignore
                 fields: () => {
                     const fields: {[key: string]: {[key: string]: any}} = {};
-                    if(metatypePairList[metatype.name]){
-                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
-                            Object.keys(metatypePairList[metatype.name][pair]).forEach((dest) => {
+                    if(metatypePairObject[metatype.name]){
+                        Object.keys(metatypePairObject[metatype.name]).forEach((pair) => {
+                            Object.keys(metatypePairObject[metatype.name][pair]).forEach((dest) => {
                                 fields[dest] = {type: GraphQLBoolean}
                             })
                         })
@@ -144,8 +171,8 @@ export default class GraphQLSchemaGenerator {
                 // @ts-ignore
                 fields: () => {
                     const fields: {[key: string]: {[key: string]: GraphQLNamedType | GraphQLList<any>}} = {};
-                    if(metatypePairList[metatype.name]){
-                        Object.keys(metatypePairList[metatype.name]).forEach((rel) => {
+                    if(metatypePairObject[metatype.name]){
+                        Object.keys(metatypePairObject[metatype.name]).forEach((rel) => {
                             fields[rel] = {type: new GraphQLList(destinationInputType)}
                         })
                     }
@@ -159,9 +186,9 @@ export default class GraphQLSchemaGenerator {
                 // @ts-ignore
                 fields: () => {
                     const fields: {[key: string]: any} = {};
-                    if(metatypePairList[metatype.name]){
-                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
-                            Object.keys(metatypePairList[metatype.name][pair]).forEach((dest) => {
+                    if(metatypePairObject[metatype.name]){
+                        Object.keys(metatypePairObject[metatype.name]).forEach((pair) => {
+                            Object.keys(metatypePairObject[metatype.name][pair]).forEach((dest) => {
                                 fields[dest] = {type: GraphQLString}
                             })
                         })
@@ -176,8 +203,8 @@ export default class GraphQLSchemaGenerator {
                 // @ts-ignore
                 fields: () => {
                     const fields: {[key: string]: any} = {};
-                    if(metatypePairList[metatype.name]){
-                        Object.keys(metatypePairList[metatype.name]).forEach((pair) => {
+                    if(metatypePairObject[metatype.name]){
+                        Object.keys(metatypePairObject[metatype.name]).forEach((pair) => {
                             fields[pair] = {type: destinationInfo}
                         })
                     }
@@ -277,7 +304,7 @@ export default class GraphQLSchemaGenerator {
 
         const metatypeObjects = new GraphQLObjectType({
             name: 'metatypes',
-            fields: metatypeGraphQLObjects
+            fields: metatypeGraphQLObjects,
         })
 
         const test = new GraphQLObjectType({
@@ -293,7 +320,7 @@ export default class GraphQLSchemaGenerator {
                         // fields: {
                         //     metatypes: {type: metatypeObjects},
                         //     relationships: {type: test},
-                        // }
+                        // },
                         fields: metatypeGraphQLObjects,
                     }),
                 }),
@@ -401,8 +428,6 @@ export default class GraphQLSchemaGenerator {
                                     properties[stringToValidPropertyName(key)] = node.properties[key];
                                 });
                             }
-
-                            // what needs to be returned here?
 
                             nodeOutput.push({
                                 ...properties,
